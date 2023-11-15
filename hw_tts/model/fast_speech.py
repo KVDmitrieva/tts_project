@@ -1,24 +1,22 @@
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from hw_tts.model.base_model import BaseModel
+from hw_tts.model.utils import *
 
 
-class PositionwiseFeedForward(nn.Module):
-    ''' A two-feed-forward-layer module '''
+class PositionWiseFeedForward(nn.Module):
+    """A two-feed-forward-layer module"""
 
-    def __init__(self, d_in, d_hid, dropout=0.1):
+    def __init__(self, embed_dim, hidden_dim, fft_conv1d_kernel=(9, 1), fft_conv1d_padding=(4, 0), dropout=0.1):
         super().__init__()
 
-        # Use Conv1D
         # position-wise
-        self.w_1 = nn.Conv1d(
-            d_in, d_hid, kernel_size=model_config.fft_conv1d_kernel[0], padding=model_config.fft_conv1d_padding[0])
-        # position-wise
-        self.w_2 = nn.Conv1d(
-            d_hid, d_in, kernel_size=model_config.fft_conv1d_kernel[1], padding=model_config.fft_conv1d_padding[1])
+        self.w_1 = nn.Conv1d(embed_dim, hidden_dim, kernel_size=fft_conv1d_kernel[0], padding=fft_conv1d_padding[0])
+        self.w_2 = nn.Conv1d(hidden_dim, embed_dim, kernel_size=fft_conv1d_kernel[1], padding=fft_conv1d_padding[1])
 
-        self.layer_norm = nn.LayerNorm(d_in)
+        self.layer_norm = nn.LayerNorm(embed_dim)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
@@ -35,16 +33,10 @@ class PositionwiseFeedForward(nn.Module):
 class FFTBlock(nn.Module):
     """FFT Block"""
 
-    def __init__(self,
-                 d_model,
-                 d_inner,
-                 n_head,
-                 d_k,
-                 d_v,
-                 dropout=0.1):
+    def __init__(self, embed_dim, hidden_dim, num_heads, dropout=0.1):
         super(FFTBlock, self).__init__()
-        self.slf_attn = nn.MultiheadAttention(num_heads=n_head, embed_dim=d_model, dropout=dropout)
-        self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
+        self.slf_attn = nn.MultiheadAttention(num_heads=num_heads, embed_dim=embed_dim, dropout=dropout)
+        self.pos_ffn = PositionWiseFeedForward(embed_dim, hidden_dim, dropout=dropout)
 
     def forward(self, enc_input, non_pad_mask=None, slf_attn_mask=None):
         enc_output, enc_slf_attn = self.slf_attn(
@@ -61,61 +53,36 @@ class FFTBlock(nn.Module):
         return enc_output, enc_slf_attn
 
 
-def create_alignment(base_mat, duration_predictor_output):
-    N, L = duration_predictor_output.shape
-    for i in range(N):
-        count = 0
-        for j in range(L):
-            for k in range(duration_predictor_output[i][j]):
-                base_mat[i][count+k][j] = 1
-            count = count + duration_predictor_output[i][j]
-    return base_mat
-
-
-class Transpose(nn.Module):
-    def __init__(self, dim_1, dim_2):
-        super().__init__()
-        self.dim_1 = dim_1
-        self.dim_2 = dim_2
-
-    def forward(self, x):
-        return x.transpose(self.dim_1, self.dim_2)
-
-
 class DurationPredictor(nn.Module):
     """ Duration Predictor """
 
-    def __init__(self, model_config: FastSpeechConfig):
+    def __init__(self, encoder_dim, duration_predictor_kernel_size,
+                 duration_predictor_filter_size, dropout):
         super(DurationPredictor, self).__init__()
-
-        self.input_size = model_config.encoder_dim
-        self.filter_size = model_config.duration_predictor_filter_size
-        self.kernel = model_config.duration_predictor_kernel_size
-        self.conv_output_size = model_config.duration_predictor_filter_size
-        self.dropout = model_config.dropout
 
         self.conv_net = nn.Sequential(
             Transpose(-1, -2),
             nn.Conv1d(
-                self.input_size, self.filter_size,
-                kernel_size=self.kernel, padding=1
+                encoder_dim, duration_predictor_filter_size,
+                kernel_size=duration_predictor_kernel_size, padding=1
             ),
             Transpose(-1, -2),
-            nn.LayerNorm(self.filter_size),
+            nn.LayerNorm(duration_predictor_filter_size),
             nn.ReLU(),
-            nn.Dropout(self.dropout),
+            nn.Dropout(dropout),
             Transpose(-1, -2),
             nn.Conv1d(
-                self.filter_size, self.filter_size,
-                kernel_size=self.kernel, padding=1
+                duration_predictor_filter_size,
+                duration_predictor_filter_size,
+                kernel_size=duration_predictor_kernel_size, padding=1
             ),
             Transpose(-1, -2),
-            nn.LayerNorm(self.filter_size),
+            nn.LayerNorm(duration_predictor_filter_size),
             nn.ReLU(),
-            nn.Dropout(self.dropout)
+            nn.Dropout(dropout)
         )
 
-        self.linear_layer = nn.Linear(self.conv_output_size, 1)
+        self.linear_layer = nn.Linear(duration_predictor_filter_size, 1)
         self.relu = nn.ReLU()
 
     def forward(self, encoder_output):
@@ -132,83 +99,57 @@ class DurationPredictor(nn.Module):
 class LengthRegulator(nn.Module):
     """ Length Regulator """
 
-    def __init__(self, model_config):
+    def __init__(self, duration_predictor_config):
         super(LengthRegulator, self).__init__()
-        self.duration_predictor = DurationPredictor(model_config)
+        self.duration_predictor = DurationPredictor(**duration_predictor_config)
 
-    def LR(self, x, duration_predictor_output, mel_max_length=None):
-        expand_max_len = torch.max(
-            torch.sum(duration_predictor_output, -1), -1)[0]
-        alignment = torch.zeros(duration_predictor_output.size(0),
-                                expand_max_len,
+    @staticmethod
+    def _create_alignment(base_mat, duration_predictor_output):
+        N, L = duration_predictor_output.shape
+        for i in range(N):
+            count = 0
+            for j in range(L):
+                for k in range(duration_predictor_output[i][j]):
+                    base_mat[i][count + k][j] = 1
+                count = count + duration_predictor_output[i][j]
+        return base_mat
+
+    def _regulate_length(self, x, duration_predictor_output, mel_max_length=None):
+        expand_max_len = duration_predictor_output.sum(dim=-1).max(dim=-1)[0]
+        alignment = torch.zeros(duration_predictor_output.size(0), expand_max_len,
                                 duration_predictor_output.size(1)).numpy()
-        alignment = create_alignment(alignment,
-                                     duration_predictor_output.cpu().numpy())
+        alignment = self._create_alignment(alignment, duration_predictor_output.cpu().numpy())
         alignment = torch.from_numpy(alignment).to(x.device)
 
         output = alignment @ x
         if mel_max_length:
-            output = F.pad(
-                output, (0, 0, 0, mel_max_length - output.size(1), 0, 0))
+            output = F.pad(output, (0, 0, 0, mel_max_length - output.size(1), 0, 0))
         return output
 
     def forward(self, x, alpha=1.0, target=None, mel_max_length=None):
         duration_predictor_output = self.duration_predictor(x)
         if target is not None:
-            output = self.LR(x, target, mel_max_length)
+            output = self._regulate_length(x, target, mel_max_length)
             return output, duration_predictor_output
 
         duration_predictor_output = (alpha * (duration_predictor_output + 0.5)).int()
-        output = self.LR(x, duration_predictor_output, mel_max_length)
-
-        mel_pos = torch.arange(1, dur_prediction.size(1) + 1).unsqueeze(0).to(train_config.device)
+        output = self._regulate_length(x, duration_predictor_output, mel_max_length)
+        mel_pos = torch.arange(1, duration_predictor_output.size(1) + 1).unsqueeze(0).to(x.device)
 
         return output, mel_pos
 
 
-def get_non_pad_mask(seq):
-    assert seq.dim() == 2
-    return seq.ne(model_config.PAD).type(torch.float).unsqueeze(-1)
-
-def get_attn_key_pad_mask(seq_k, seq_q):
-    ''' For masking out the padding part of key sequence. '''
-    # Expand to fit the shape of key query attention matrix.
-    len_q = seq_q.size(1)
-    padding_mask = seq_k.eq(model_config.PAD)
-    padding_mask = padding_mask.unsqueeze(
-        1).expand(-1, len_q, -1)  # b x lq x lk
-
-    return padding_mask
-
-
 class Encoder(nn.Module):
-    def __init__(self, model_config):
+    def __init__(self, num_layers, encoder_dim, encoder_conv1d_filter_size,
+                 encoder_head, dropout, max_seq_len, vocab_size, pad=0):
         super(Encoder, self).__init__()
 
-        len_max_seq=model_config.max_seq_len
-        n_position = len_max_seq + 1
-        n_layers = model_config.encoder_n_layer
+        self.src_word_emb = nn.Embedding(vocab_size, encoder_dim, padding_idx=pad)
+        self.position_enc = nn.Embedding(max_seq_len + 1, encoder_dim, padding_idx=pad)
 
-        self.src_word_emb = nn.Embedding(
-            model_config.vocab_size,
-            model_config.encoder_dim,
-            padding_idx=model_config.PAD
-        )
-
-        self.position_enc = nn.Embedding(
-            n_position,
-            model_config.encoder_dim,
-            padding_idx=model_config.PAD
-        )
-
-        self.layer_stack = nn.ModuleList([FFTBlock(
-            model_config.encoder_dim,
-            model_config.encoder_conv1d_filter_size,
-            model_config.encoder_head,
-            model_config.encoder_dim // model_config.encoder_head,
-            model_config.encoder_dim // model_config.encoder_head,
-            dropout=model_config.dropout
-        ) for _ in range(n_layers)])
+        self.layer_stack = nn.ModuleList([
+            FFTBlock(encoder_dim, encoder_conv1d_filter_size, encoder_head, dropout=dropout)
+            for _ in range(num_layers)])
 
     def forward(self, src_seq, src_pos, return_attns=False):
 
@@ -222,13 +163,9 @@ class Encoder(nn.Module):
         enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos)
 
         for enc_layer in self.layer_stack:
-            enc_output, enc_slf_attn = enc_layer(
-                enc_output,
-                non_pad_mask=non_pad_mask,
-                slf_attn_mask=slf_attn_mask)
+            enc_output, enc_slf_attn = enc_layer(enc_output, non_pad_mask=non_pad_mask, slf_attn_mask=slf_attn_mask)
             if return_attns:
                 enc_slf_attn_list += [enc_slf_attn]
-
 
         return enc_output, non_pad_mask
 
@@ -236,28 +173,16 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """ Decoder """
 
-    def __init__(self, model_config):
+    def __init__(self, num_layers, decoder_dim, encoder_conv1d_filter_size,
+                 encoder_head, dropout, max_seq_len, pad=0):
 
         super(Decoder, self).__init__()
 
-        len_max_seq=model_config.max_seq_len
-        n_position = len_max_seq + 1
-        n_layers = model_config.decoder_n_layer
+        self.position_enc = nn.Embedding(max_seq_len + 1, decoder_dim, padding_idx=pad)
 
-        self.position_enc = nn.Embedding(
-            n_position,
-            model_config.encoder_dim,
-            padding_idx=model_config.PAD,
-        )
-
-        self.layer_stack = nn.ModuleList([FFTBlock(
-            model_config.encoder_dim,
-            model_config.encoder_conv1d_filter_size,
-            model_config.encoder_head,
-            model_config.encoder_dim // model_config.encoder_head,
-            model_config.encoder_dim // model_config.encoder_head,
-            dropout=model_config.dropout
-        ) for _ in range(n_layers)])
+        self.layer_stack = nn.ModuleList([
+            FFTBlock(decoder_dim, encoder_conv1d_filter_size, encoder_head, dropout=dropout)
+            for _ in range(num_layers)])
 
     def forward(self, enc_seq, enc_pos, return_attns=False):
 
@@ -271,37 +196,27 @@ class Decoder(nn.Module):
         dec_output = enc_seq + self.position_enc(enc_pos)
 
         for dec_layer in self.layer_stack:
-            dec_output, dec_slf_attn = dec_layer(
-                dec_output,
-                non_pad_mask=non_pad_mask,
-                slf_attn_mask=slf_attn_mask)
+            dec_output, dec_slf_attn = dec_layer(dec_output, non_pad_mask=non_pad_mask, slf_attn_mask=slf_attn_mask)
             if return_attns:
                 dec_slf_attn_list += [dec_slf_attn]
 
         return dec_output
 
-def get_mask_from_lengths(lengths, max_len=None):
-        if max_len == None:
-            max_len = torch.max(lengths).item()
-
-        ids = torch.arange(0, max_len, 1, device=lengths.device)
-        mask = (ids < lengths.unsqueeze(1)).bool()
-
-        return mask
 
 class FastSpeech(BaseModel):
     """ FastSpeech """
 
-    def __init__(self, n_feats, n_class, model_config, batch):
+    def __init__(self, n_feats, n_class, encoder_params, lr_params, decoder_params, num_mels, batch):
         super().__init__(n_feats, n_class, **batch)
 
-        self.encoder = Encoder(model_config)
-        self.length_regulator = LengthRegulator(model_config)
-        self.decoder = Decoder(model_config)
+        self.encoder = Encoder(**encoder_params)
+        self.length_regulator = LengthRegulator(**lr_params)
+        self.decoder = Decoder(**decoder_params)
 
-        self.mel_linear = nn.Linear(model_config.decoder_dim, mel_config.num_mels)
+        self.mel_linear = nn.Linear(decoder_params["decoder_dim"], num_mels)
 
-    def mask_tensor(self, mel_output, position, mel_max_length):
+    @staticmethod
+    def _mask_tensor(mel_output, position, mel_max_length):
         lengths = torch.max(position, -1)[0]
         mask = ~get_mask_from_lengths(lengths, max_len=mel_max_length)
         mask = mask.unsqueeze(-1).expand(-1, -1, mel_output.size(-1))
@@ -312,7 +227,7 @@ class FastSpeech(BaseModel):
         if self.training:
             output, duration_predictor_output = self.length_regulator(x, alpha, length_target, mel_max_length)
             output = self.decoder(output, mel_pos)
-            output = self.mask_tensor(output, mel_pos, mel_max_length)
+            output = self._mask_tensor(output, mel_pos, mel_max_length)
             output = self.mel_linear(output)
             return output, duration_predictor_output
 
