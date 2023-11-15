@@ -1,0 +1,169 @@
+{
+  "name": "one_batch_test_jasper",
+  "n_gpu": 1,
+  "preprocessing": {
+    "sr": 16000,
+    "spectrogram": {
+      "type": "MelSpectrogram",
+      "args": {
+      }
+    },
+    "log_spec": true
+  },
+  "augmentations": {
+    "wave": [],
+    "spectrogram": []
+  },
+  "arch1": {
+    "type": "BaselineModel",
+    "args": {
+      "n_feats": 128,
+      "fc_hidden": 512
+    }
+  },
+  "arch": {
+    "type": "JasperModel",
+    "args": {
+      "n_feats":  128,
+      "blocks_num":  5,
+      "submodules_num": 2,
+      "alpha": 0.5,
+      "beta": -35,
+      "prolog_params": {
+        "out_channels":  256,
+        "kernel_size":  5,
+        "stride": 2,
+        "p": 0.2
+      },
+      "blocks_params": [
+        {
+          "in_channels":  256,
+          "out_channels":  256,
+          "kernel_size":  5,
+          "p": 0.2
+        },
+        {
+          "in_channels":  256,
+          "out_channels":  384,
+          "kernel_size":  7,
+          "p": 0.2
+        },
+         {
+          "in_channels":  384,
+          "out_channels":  512,
+          "kernel_size":  9,
+          "p": 0.2
+        },
+        {
+          "in_channels":  512,
+          "out_channels":  640,
+          "kernel_size":  11,
+          "p": 0.3
+        },
+        {
+          "in_channels":  640,
+          "out_channels":  768,
+          "kernel_size":  13,
+          "p": 0.3
+        }
+      ],
+      "epilog_params": [
+        {
+          "in_channels":  768,
+          "out_channels":  896,
+          "kernel_size":  15,
+          "dilation": 2,
+          "p": 0.4
+        },
+        {
+          "in_channels":  896,
+          "out_channels":  1024,
+          "kernel_size":  1,
+          "p": 0.4
+        },
+        {
+          "in_channels":  1024,
+          "kernel_size":  1
+        }
+      ]
+    }
+  },
+  "data": {
+    "train": {
+      "batch_size": 10,
+      "num_workers": 0,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "dev-clean",
+            "max_audio_length": 20.0,
+            "max_text_length": 200,
+            "limit": 10
+          }
+        }
+      ]
+    },
+    "val": {
+      "batch_size": 10,
+      "num_workers": 0,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "dev-clean",
+            "max_audio_length": 20.0,
+            "max_text_length": 200,
+            "limit": 10
+          }
+        }
+      ]
+    }
+  },
+  "optimizer": {
+    "type": "SGD",
+    "args": {
+      "lr": 1e-2
+    }
+  },
+  "loss": {
+    "type": "CTCLoss",
+    "args": {}
+  },
+  "metrics": [
+    {
+      "type": "ArgmaxWERMetric",
+      "args": {
+        "name": "WER (argmax)"
+      }
+    },
+    {
+      "type": "ArgmaxCERMetric",
+      "args": {
+        "name": "CER (argmax)"
+      }
+    }
+  ],
+  "lr_scheduler": {
+    "type": "OneCycleLR",
+    "args": {
+      "steps_per_epoch": 100,
+      "epochs": 51,
+      "anneal_strategy": "cos",
+      "max_lr": 1e-2,
+      "pct_start": 0.2
+    }
+  },
+  "trainer": {
+    "epochs": 50,
+    "save_dir": "saved/",
+    "save_period": 5,
+    "verbosity": 2,
+    "monitor": "min val_loss",
+    "early_stop": 100,
+    "visualize": "wandb",
+    "wandb_project": "asr_project",
+    "len_epoch": 100,
+    "grad_norm_clip": 10
+  }
+}
