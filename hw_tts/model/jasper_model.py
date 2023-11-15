@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from hw_asr.base import BaseModel
+from hw_tts.model.base_model import BaseModel
 
 
 class JasperSubmodule(nn.Module):

@@ -1,7 +1,7 @@
 from torch import nn
 from torch.nn import Sequential
 
-from hw_asr.base import BaseModel
+from hw_tts.model.base_model import BaseModel
 
 
 class BaselineModel(BaseModel):

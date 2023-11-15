@@ -1,7 +1,7 @@
 import torch_audiomentations
 from torch import Tensor
 
-from hw_asr.augmentations.base import AugmentationBase
+from hw_tts.augmentations.base import AugmentationBase
 
 
 class Gain(AugmentationBase):

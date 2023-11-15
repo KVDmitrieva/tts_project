@@ -2,7 +2,7 @@ from typing import List, Callable
 
 from torch import Tensor
 
-from hw_asr.augmentations.base import AugmentationBase
+from hw_tts.augmentations.base import AugmentationBase
 
 
 class SequentialAugmentation(AugmentationBase):

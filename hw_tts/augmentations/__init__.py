@@ -1,10 +1,10 @@
 from collections.abc import Callable
 from typing import List
 
-import hw_asr.augmentations.spectrogram_augmentations
-import hw_asr.augmentations.wave_augmentations
-from hw_asr.augmentations.sequential import SequentialAugmentation
-from hw_asr.utils.parse_config import ConfigParser
+import hw_tts.augmentations.spectrogram_augmentations
+import hw_tts.augmentations.wave_augmentations
+from hw_tts.augmentations.sequential import SequentialAugmentation
+from hw_tts.utils.parse_config import ConfigParser
 
 
 def from_configs(configs: ConfigParser):
@@ -12,14 +12,14 @@ def from_configs(configs: ConfigParser):
     if "augmentations" in configs.config and "wave" in configs.config["augmentations"]:
         for aug_dict in configs.config["augmentations"]["wave"]:
             wave_augs.append(
-                configs.init_obj(aug_dict, hw_asr.augmentations.wave_augmentations)
+                configs.init_obj(aug_dict, hw_tts.augmentations.wave_augmentations)
             )
 
     spec_augs = []
     if "augmentations" in configs.config and "spectrogram" in configs.config["augmentations"]:
         for aug_dict in configs.config["augmentations"]["spectrogram"]:
             spec_augs.append(
-                configs.init_obj(aug_dict, hw_asr.augmentations.spectrogram_augmentations)
+                configs.init_obj(aug_dict, hw_tts.augmentations.spectrogram_augmentations)
             )
     return _to_function(wave_augs), _to_function(spec_augs)
 

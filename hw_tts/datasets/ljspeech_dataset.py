@@ -6,8 +6,8 @@ from curses.ascii import isascii
 from pathlib import Path
 
 import torchaudio
-from hw_asr.base.base_dataset import BaseDataset
-from hw_asr.utils import ROOT_PATH
+from hw_tts.datasets.base_dataset import BaseDataset
+from hw_tts.utils import ROOT_PATH
 from speechbrain.utils.data_utils import download_file
 from tqdm import tqdm
 

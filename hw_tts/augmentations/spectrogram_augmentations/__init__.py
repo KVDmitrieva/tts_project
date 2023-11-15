@@ -1,5 +1,5 @@
-from hw_asr.augmentations.spectrogram_augmentations.FrequencyMasking import FrequencyMasking
-from hw_asr.augmentations.spectrogram_augmentations.TimeMasking import TimeMasking
+from hw_tts.augmentations.spectrogram_augmentations.FrequencyMasking import FrequencyMasking
+from hw_tts.augmentations.spectrogram_augmentations.TimeMasking import TimeMasking
 
 
 __all__ = [

@@ -1,7 +1,7 @@
 import torch
 import unittest
 
-from hw_asr.text_encoder.ctc_char_text_encoder import CTCCharTextEncoder
+from hw_tts.text_encoder.ctc_char_text_encoder import CTCCharTextEncoder
 
 
 class TestTextEncoder(unittest.TestCase):

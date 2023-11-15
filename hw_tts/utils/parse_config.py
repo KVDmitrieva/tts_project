@@ -7,11 +7,11 @@ from functools import reduce, partial
 from operator import getitem
 from pathlib import Path
 
-from hw_asr import text_encoder as text_encoder_module
-from hw_asr.base.base_text_encoder import BaseTextEncoder
-from hw_asr.logger import setup_logging
-from hw_asr.text_encoder import CTCCharTextEncoder
-from hw_asr.utils import read_json, write_json, ROOT_PATH
+from hw_tts import text_encoder as text_encoder_module
+from hw_tts.text_encoder.base_text_encoder import BaseTextEncoder
+from hw_tts.logger import setup_logging
+from hw_tts.text_encoder import CTCCharTextEncoder
+from hw_tts.utils import read_json, write_json, ROOT_PATH
 
 
 class ConfigParser:

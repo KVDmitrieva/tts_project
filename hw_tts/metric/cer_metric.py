@@ -3,9 +3,9 @@ from typing import List
 import torch
 from torch import Tensor
 
-from hw_asr.base.base_metric import BaseMetric
-from hw_asr.base.base_text_encoder import BaseTextEncoder
-from hw_asr.metric.utils import calc_cer
+from hw_tts.metric.base_metric import BaseMetric
+from hw_tts.text_encoder.base_text_encoder import BaseTextEncoder
+from hw_tts.metric.utils import calc_cer
 
 
 class ArgmaxCERMetric(BaseMetric):

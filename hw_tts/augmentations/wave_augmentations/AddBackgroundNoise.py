@@ -4,7 +4,7 @@ from torch import tensor, Tensor
 from torchaudio.functional import add_noise
 from torchaudio.utils import download_asset
 
-from hw_asr.augmentations.base import AugmentationBase
+from hw_tts.augmentations.base import AugmentationBase
 
 
 class AddBackgroundNoise(AugmentationBase):

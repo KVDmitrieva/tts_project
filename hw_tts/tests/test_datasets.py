@@ -2,11 +2,11 @@ import unittest
 
 import torch
 
-from hw_asr.datasets import LibrispeechDataset, CustomDirAudioDataset, CustomAudioDataset
-from hw_asr.tests.utils import clear_log_folder_after_use
-from hw_asr.text_encoder.ctc_char_text_encoder import CTCCharTextEncoder
-from hw_asr.utils import ROOT_PATH
-from hw_asr.utils.parse_config import ConfigParser
+from hw_tts.datasets import LibrispeechDataset, CustomDirAudioDataset, CustomAudioDataset
+from hw_tts.tests.utils import clear_log_folder_after_use
+from hw_tts.text_encoder.ctc_char_text_encoder import CTCCharTextEncoder
+from hw_tts.utils import ROOT_PATH
+from hw_tts.utils.parse_config import ConfigParser
 
 
 class TestDataset(unittest.TestCase):

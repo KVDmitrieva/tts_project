@@ -2,12 +2,12 @@ from operator import xor
 
 from torch.utils.data import ConcatDataset, DataLoader
 
-import hw_asr.augmentations
-import hw_asr.datasets
-from hw_asr import batch_sampler as batch_sampler_module
-from hw_asr.base.base_text_encoder import BaseTextEncoder
-from hw_asr.collate_fn.collate import collate_fn
-from hw_asr.utils.parse_config import ConfigParser
+import hw_tts.augmentations
+import hw_tts.datasets
+from hw_tts import batch_sampler as batch_sampler_module
+from hw_tts.text_encoder.base_text_encoder import BaseTextEncoder
+from hw_tts.collate_fn.collate import collate_fn
+from hw_tts.utils.parse_config import ConfigParser
 
 
 def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
@@ -17,7 +17,7 @@ def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
 
         # set train augmentations
         if split == 'train':
-            wave_augs, spec_augs = hw_asr.augmentations.from_configs(configs)
+            wave_augs, spec_augs = hw_tts.augmentations.from_configs(configs)
             drop_last = True
         else:
             wave_augs, spec_augs = None, None
@@ -27,7 +27,7 @@ def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
         datasets = []
         for ds in params["datasets"]:
             datasets.append(configs.init_obj(
-                ds, hw_asr.datasets, text_encoder=text_encoder, config_parser=configs,
+                ds, hw_tts.datasets, text_encoder=text_encoder, config_parser=configs,
                 wave_augs=wave_augs, spec_augs=spec_augs))
         assert len(datasets)
         if len(datasets) > 1:

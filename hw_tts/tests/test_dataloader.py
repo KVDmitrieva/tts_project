@@ -2,11 +2,11 @@ import unittest
 
 from tqdm import tqdm
 
-from hw_asr.collate_fn.collate import collate_fn
-from hw_asr.datasets import LibrispeechDataset
-from hw_asr.tests.utils import clear_log_folder_after_use
-from hw_asr.utils.object_loading import get_dataloaders
-from hw_asr.utils.parse_config import ConfigParser
+from hw_tts.collate_fn.collate import collate_fn
+from hw_tts.datasets import LibrispeechDataset
+from hw_tts.tests.utils import clear_log_folder_after_use
+from hw_tts.utils.object_loading import get_dataloaders
+from hw_tts.utils.parse_config import ConfigParser
 
 
 class TestDataloader(unittest.TestCase):
