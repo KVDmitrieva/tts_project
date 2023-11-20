@@ -1,6 +1,4 @@
-import torch
 import torch.nn.functional as F
-from torch import nn
 
 from hw_tts.model.base_model import BaseModel
 from hw_tts.model.utils import *
@@ -107,11 +105,9 @@ class LengthRegulator(nn.Module):
     def _create_alignment(base_mat, duration_predictor_output):
         N, L = duration_predictor_output.shape
         for i in range(N):
-            count = 0
-            for j in range(L):
-                for k in range(duration_predictor_output[i][j]):
-                    base_mat[i][count + k][j] = 1
-                count = count + duration_predictor_output[i][j]
+            base_mat[i] = torch.repeat_interleave(
+                torch.eye(L), duration_predictor_output[i], dim=0
+            )
         return base_mat
 
     def _regulate_length(self, x, duration_predictor_output, mel_max_length=None):
@@ -206,8 +202,8 @@ class Decoder(nn.Module):
 class FastSpeech(BaseModel):
     """ FastSpeech """
 
-    def __init__(self, n_feats, n_class, encoder_params, lr_params, decoder_params, num_mels, batch):
-        super().__init__(n_feats, n_class, **batch)
+    def __init__(self, encoder_params, lr_params, decoder_params, num_mels):
+        super().__init__()
 
         self.encoder = Encoder(**encoder_params)
         self.length_regulator = LengthRegulator(**lr_params)
@@ -229,9 +225,9 @@ class FastSpeech(BaseModel):
             output = self.decoder(output, mel_pos)
             output = self._mask_tensor(output, mel_pos, mel_max_length)
             output = self.mel_linear(output)
-            return output, duration_predictor_output
+            return {"mel", output, "duration_predicted", duration_predictor_output}
 
         output, mel_pos = self.length_regulator(x, alpha)
         output = self.decoder(output, mel_pos)
         output = self.mel_linear(output)
-        return output
+        return {"mel": output}

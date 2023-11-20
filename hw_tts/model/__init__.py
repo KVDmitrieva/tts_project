@@ -1,7 +1,7 @@
 from hw_tts.model.baseline_model import BaselineModel
-from hw_tts.model.jasper_model import JasperModel
+from hw_tts.model.fast_speech import FastSpeech
 
 __all__ = [
     "BaselineModel",
-    "JasperModel"
+    "FastSpeech"
 ]
