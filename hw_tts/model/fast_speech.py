@@ -38,7 +38,7 @@ class MultiHeadAttention(nn.Module):
         self.d_k = d_k
         self.d_v = d_v
         self.d_model = d_model
-        print("INIT PARAMS", d_k, d_v)
+
         self.w_qs = nn.Linear(d_model, n_head * d_k)
         self.w_ks = nn.Linear(d_model, n_head * d_k)
         self.w_vs = nn.Linear(d_model, n_head * d_v)
@@ -76,10 +76,6 @@ class MultiHeadAttention(nn.Module):
         k = self.w_ks(k).view(sz_b, len_k, n_head, d_k)
         v = self.w_vs(v).view(sz_b, len_v, n_head, d_v)
 
-        print("Q", torch.isnan(q).sum())
-        print("K", torch.isnan(k).sum())
-        print("V", torch.isnan(v).sum())
-
         q = q.permute(2, 0, 1, 3).contiguous().view(-1, len_q, d_k)  # (n*b) x lq x dk
         k = k.permute(2, 0, 1, 3).contiguous().view(-1, len_k, d_k)  # (n*b) x lk x dk
         v = v.permute(2, 0, 1, 3).contiguous().view(-1, len_v, d_v)  # (n*b) x lv x dv
@@ -88,15 +84,11 @@ class MultiHeadAttention(nn.Module):
             mask = mask.repeat(n_head, 1, 1)  # (n*b) x .. x ..
         output, attn = self.attention(q, k, v, mask=mask)
 
-        print("OUT", torch.isnan(output).sum())
-        print("ATTN", torch.isnan(attn).sum())
-
         output = output.view(n_head, sz_b, len_q, d_v)
         output = output.permute(1, 2, 0, 3).contiguous().view(sz_b, len_q, -1)  # b x lq x (n*dv)
 
         output = self.dropout(self.fc(output))
         output = self.layer_norm(output + residual)
-        print("NORM", torch.isnan(output).sum())
 
         return output, attn
 
@@ -256,7 +248,7 @@ class Encoder(nn.Module):
 
         for enc_layer in self.layer_stack:
             enc_output, enc_slf_attn = enc_layer(enc_output, non_pad_mask=non_pad_mask, slf_attn_mask=slf_attn_mask)
-            print("FFT OUT", torch.isnan(enc_output).sum())
+
             if return_attns:
                 enc_slf_attn_list += [enc_slf_attn]
 
@@ -316,22 +308,10 @@ class FastSpeech(BaseModel):
 
     def forward(self, text_encoded, src_pos, mel_pos=None, mel_max_length=None, alignment=None, alpha=1.0, **batch):
         x, _ = self.encoder(text_encoded, src_pos)
-        if torch.isnan(x).sum() > 0:
-            print("BROKEN ENCODER")
         output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
-        if torch.isnan(output).sum() > 0:
-            print("BROKEN LR: OUTPUT")
-        if torch.isnan(duration_predictor_output).sum() > 0:
-            print("BROKEN LR: duration_predictor_output")
         output = self.decoder(output, mel_pos)
-        if torch.isnan(output).sum() > 0:
-            print("BROKEN DECODER")
         output = self._mask_tensor(output, mel_pos, mel_max_length)
-        if torch.isnan(output).sum() > 0:
-            print("BROKEN MASK")
         output = self.mel_linear(output)
-        if torch.isnan(output).sum() > 0:
-            print("BROKEN MEL LINEAR")
         return {"mel": output, "duration_predicted": duration_predictor_output}
 
     @torch.inference_mode

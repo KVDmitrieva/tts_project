@@ -23,8 +23,6 @@ def collate_fn(dataset_items: List[dict]):
         text_encoded.append(torch.tensor(item["text_encoded"]))
         mel_pos.append(torch.arange(1, item["mel"].shape[0] + 1))
         src_pos.append(torch.arange(1, len(item["text_encoded"]) + 1))
-        if len(text[-1]) == 0:
-            print("ATTENTION!!!")
 
     return {
         "text": text,
