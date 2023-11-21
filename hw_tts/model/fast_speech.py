@@ -202,7 +202,7 @@ class LengthRegulator(nn.Module):
         expand_max_len = duration_predictor_output.sum(dim=-1).max(dim=-1)[0]
         alignment = torch.zeros(duration_predictor_output.size(0), expand_max_len,
                                 duration_predictor_output.size(1)).numpy()
-        alignment = self._create_alignment(alignment, duration_predictor_output.cpu().numpy())
+        alignment = self._create_alignment(alignment, duration_predictor_output)
         alignment = torch.from_numpy(alignment).to(x.device)
 
         output = alignment @ x
