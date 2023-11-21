@@ -218,10 +218,10 @@ class FastSpeech(BaseModel):
         mask = mask.unsqueeze(-1).expand(-1, -1, mel_output.size(-1))
         return mel_output.masked_fill(mask, 0.)
 
-    def forward(self, src_seq, src_pos, mel_pos=None, mel_max_length=None, length_target=None, alpha=1.0):
-        x, non_pad_mask = self.encoder(src_seq, src_pos)
+    def forward(self, text_encoded, src_pos, mel_pos=None, mel_max_length=None, alignment=None, alpha=1.0, **batch):
+        x, non_pad_mask = self.encoder(text_encoded, src_pos)
         if self.training:
-            output, duration_predictor_output = self.length_regulator(x, alpha, length_target, mel_max_length)
+            output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
             output = self.decoder(output, mel_pos)
             output = self._mask_tensor(output, mel_pos, mel_max_length)
             output = self.mel_linear(output)

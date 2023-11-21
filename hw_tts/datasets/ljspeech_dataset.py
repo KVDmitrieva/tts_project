@@ -5,6 +5,7 @@ import shutil
 from curses.ascii import isascii
 from pathlib import Path
 
+import numpy as np
 import torchaudio
 from hw_tts.datasets.base_dataset import BaseDataset
 from hw_tts.utils import ROOT_PATH
@@ -19,11 +20,13 @@ URL_LINKS = {
 
 
 class LJspeechDataset(BaseDataset):
-    def __init__(self, part, data_dir=None, *args, **kwargs):
+    def __init__(self, part, mel_dir=None, alignments_dir=None, data_dir=None, *args, **kwargs):
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets" / "ljspeech"
             data_dir.mkdir(exist_ok=True, parents=True)
         self._data_dir = data_dir
+        self._mel_dir = mel_dir
+        self._alignment_dir = alignments_dir
         index = self._get_or_load_index(part)
 
         super().__init__(index, *args, **kwargs)
@@ -48,7 +51,6 @@ class LJspeechDataset(BaseDataset):
             else:
                 shutil.move(str(fpath), str(self._data_dir / "test" / fpath.name))
         shutil.rmtree(str(self._data_dir / "wavs"))
-
 
     def _get_or_load_index(self, part):
         index_path = self._data_dir / f"{part}_index.json"
@@ -93,4 +95,12 @@ class LJspeechDataset(BaseDataset):
                                 "audio_len": length,
                             }
                         )
+                        if self._mel_dir is not None:
+                            mel_name = os.path.join(self._mel_dir, "ljspeech-mel-%05d.npy" % w_id)
+                            index[-1]["mel"] = np.load(mel_name)
+
+                        if self._alignment_dir is not None:
+                            alignment_name = os.path.join(self._mel_dir, f"{w_id}.npy")
+                            index[-1]["alignment"] = np.load(alignment_name)
+
         return index
