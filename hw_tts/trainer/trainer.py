@@ -189,7 +189,6 @@ class Trainer(BaseTrainer):
         return base.format(current, total, 100.0 * current / total)
 
     def _log_predictions(self, text, mel, mel_target, examples_to_log=3, *args, **kwargs):
-
         if self.writer is None:
             return
 
@@ -199,12 +198,12 @@ class Trainer(BaseTrainer):
         for i in range(examples_to_log):
             txt, mel_pred, mel_src = res_tuple[i]
             wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
-            pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.cpu()))
-            target = PIL.Image.open(plot_spectrogram_to_buf(mel_target.cpu()))
+            pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.detach().cpu()))
+            target = PIL.Image.open(plot_spectrogram_to_buf(mel_target.detach().cpu()))
             self.writer.add_text("text example", txt)
             self.writer.add_image("mel prediction example", ToTensor()(pred))
             self.writer.add_image("mel target example", ToTensor()(target))
-            self.writer.add_audio("audio example", wav.cpu(), self.config["preprocessing"]["sr"])
+            self.writer.add_audio("audio example", wav.detach().cpu(), self.config["preprocessing"]["sr"])
 
 
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
