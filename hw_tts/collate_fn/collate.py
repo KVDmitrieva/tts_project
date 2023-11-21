@@ -17,8 +17,8 @@ def collate_fn(dataset_items: List[dict]):
 
     for item in dataset_items:
         text.append(item["text"])
-        alignment.append(item["alignment"])
         mel.append(torch.tensor(item["mel"]))
+        alignment.append(torch.tensor(item["alignment"]))
         mel_max_len = max(mel_max_len, item["mel"].shape[-1])
         text_encoded.append(torch.tensor(item["text_encoded"]))
         mel_pos.append(torch.arange(1, item["mel"].shape[-1] + 1))
@@ -26,10 +26,10 @@ def collate_fn(dataset_items: List[dict]):
 
     return {
         "text": text,
-        "alignment": alignment,
         "mel_max_len": mel_max_len,
         "mel_pos": pad_sequence(mel_pos, batch_first=True),
         "src_pos": pad_sequence(src_pos, batch_first=True),
+        "alignment": pad_sequence(alignment, batch_first=True),
         "text_encoded": pad_sequence(text_encoded, batch_first=True),
         "mel_target":  pad_sequence(mel, batch_first=True).transpose(1, 2)
     }
