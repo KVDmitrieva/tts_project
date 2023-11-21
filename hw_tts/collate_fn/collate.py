@@ -17,13 +17,12 @@ def collate_fn(dataset_items: List[dict]):
 
     for item in dataset_items:
         text.append(item["text"])
-        mel.append(item["mel"].T)
         alignment.append(item["alignment"])
-        text_encoded.append(item["text_encoded"])
+        mel.append(torch.tensor(item["mel"].T))
         mel_max_len = max(mel_max_len, item["mel"].shape[-1])
+        text_encoded.append(torch.tensor(item["text_encoded"]))
         mel_pos.append(torch.arange(1, item["mel"].shape[-1] + 1))
         src_pos.append(torch.arange(1, len(item["text_encoded"]) + 1))
-        print(text[-1], text_encoded[-1])
 
     return {
         "text": text,
