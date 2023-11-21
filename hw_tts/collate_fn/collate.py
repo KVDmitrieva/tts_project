@@ -20,7 +20,7 @@ def collate_fn(dataset_items: List[dict]):
         text.append(item["text"])
         mel.append(item["mel"].T)
         alignment.append(item["alignment"])
-        text_encoded.append(item["text_encoded"].squeeze(0))
+        text_encoded.append(item["text_encoded"])
         mel_max_len = max(mel_max_len, item["mel"].shape[-1])
         mel_pos.append(torch.arange(1, item["mel"].shape[-1] + 1))
         src_pos.append(torch.arange(1, text_encoded_length[-1] + 1))
