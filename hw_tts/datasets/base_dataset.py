@@ -39,7 +39,7 @@ class BaseDataset(Dataset):
         data_dict = self._index[ind]
         return {
             "text": data_dict["text"],
-            "text_encoded": text_to_sequence(data_dict["text"], "english_cleaners"),
+            "text_encoded": text_to_sequence(data_dict["text"], ["english_cleaners"]),
             "mel": data_dict.get("mel", None),
             "alignment": data_dict.get("alignment", None)
         }
