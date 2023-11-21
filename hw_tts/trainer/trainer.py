@@ -196,7 +196,8 @@ class Trainer(BaseTrainer):
         res_tuple = list(zip(text, mel, mel_target))
         shuffle(res_tuple)
         rows = {}
-        for i, txt, mel_pred, mel_src in enumerate(res_tuple[:examples_to_log]):
+        for i in range(examples_to_log):
+            txt, mel_pred, mel_src = res_tuple[i]
             wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
             rows[i] = {
                 "text": txt,
