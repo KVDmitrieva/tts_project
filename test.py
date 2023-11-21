@@ -61,7 +61,7 @@ def main(config, out_dir, test_file):
             text_enc = torch.from_numpy(text_enc).long().unsqueeze(0).to(device)
             src_pos = torch.from_numpy(src_pos).long().unsqueeze(0).to(device)
 
-            mel = model(text_enc, src_pos).transpose(1, 2)
+            mel = model.inference(text_enc, src_pos).transpose(1, 2)
 
             waveglow.inference.inference(
                 mel, waveglow_model,
