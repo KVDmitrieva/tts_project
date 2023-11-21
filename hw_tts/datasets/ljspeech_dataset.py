@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import shutil
-from curses.ascii import isascii
 from pathlib import Path
 
 import numpy as np
@@ -20,13 +19,17 @@ URL_LINKS = {
 
 
 class LJspeechDataset(BaseDataset):
-    def __init__(self, part, mel_dir=None, alignments_dir=None, data_dir=None, *args, **kwargs):
+    def __init__(self, part, mel_dir=None, alignments_dir=None, data_dir=None,
+                 text_path=None, train_ratio=0.92, *args, **kwargs):
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets" / "ljspeech"
             data_dir.mkdir(exist_ok=True, parents=True)
         self._data_dir = data_dir
-        self._mel_dir = mel_dir
-        self._alignment_dir = alignments_dir
+        self._train_ratio = train_ratio
+        self._mel_dir = ROOT_PATH / "data" / "mels" if mel_dir is None else Path(mel_dir)
+        self._train_texts = ROOT_PATH / "data" / "train.txt" if text_path is None else Path(text_path)
+        self._alignment_dir = ROOT_PATH / "data" / "alignments" if alignments_dir is None else Path(alignments_dir)
+
         index = self._get_or_load_index(part)
 
         super().__init__(index, *args, **kwargs)
@@ -41,17 +44,6 @@ class LJspeechDataset(BaseDataset):
         os.remove(str(arch_path))
         shutil.rmtree(str(self._data_dir / "LJSpeech-1.1"))
 
-        files = [file_name for file_name in (self._data_dir / "wavs").iterdir()]
-        train_length = int(0.85 * len(files)) # hand split, test ~ 15% 
-        (self._data_dir / "train").mkdir(exist_ok=True, parents=True)
-        (self._data_dir / "test").mkdir(exist_ok=True, parents=True)
-        for i, fpath in enumerate((self._data_dir / "wavs").iterdir()):
-            if i < train_length:
-                shutil.move(str(fpath), str(self._data_dir / "train" / fpath.name))
-            else:
-                shutil.move(str(fpath), str(self._data_dir / "test" / fpath.name))
-        shutil.rmtree(str(self._data_dir / "wavs"))
-
     def _get_or_load_index(self, part):
         index_path = self._data_dir / f"{part}_index.json"
         if index_path.exists():
@@ -65,42 +57,29 @@ class LJspeechDataset(BaseDataset):
 
     def _create_index(self, part):
         index = []
-        split_dir = self._data_dir / part
-        if not split_dir.exists():
+        if not self._data_dir.exists():
             self._load_dataset()
 
-        wav_dirs = set()
-        for dirpath, dirnames, filenames in os.walk(str(split_dir)):
-            if any([f.endswith(".wav") for f in filenames]):
-                wav_dirs.add(dirpath)
-        for wav_dir in tqdm(
-                list(wav_dirs), desc=f"Preparing ljspeech folders: {part}"
-        ):
-            wav_dir = Path(wav_dir)
-            trans_path = list(self._data_dir.glob("*.csv"))[0]
-            with trans_path.open() as f:
-                for line in f:
-                    w_id = line.split('|')[0]
-                    w_text = " ".join(line.split('|')[1:]).strip()
-                    wav_path = wav_dir / f"{w_id}.wav"
-                    if not wav_path.exists(): # elem in another part
-                        continue
-                    t_info = torchaudio.info(str(wav_path))
-                    length = t_info.num_frames / t_info.sample_rate
-                    if w_text.isascii():
-                        index.append(
-                            {
-                                "path": str(wav_path.absolute().resolve()),
-                                "text": w_text.lower(),
-                                "audio_len": length,
-                            }
-                        )
-                        if self._mel_dir is not None:
-                            mel_name = os.path.join(self._mel_dir, "ljspeech-mel-%05d.npy" % w_id)
-                            index[-1]["mel"] = np.load(mel_name)
+        with open(self._train_texts, "r", encoding="utf-8") as f:
+            text = f.readlines()
 
-                        if self._alignment_dir is not None:
-                            alignment_name = os.path.join(self._mel_dir, f"{w_id}.npy")
-                            index[-1]["alignment"] = np.load(alignment_name)
+        start_ind = 0 if part == "train" else int(self._train_ratio * len(text))
+        end_ind = int(self._train_ratio * len(text)) if part == "train" else len(text)
+
+        for w_id in tqdm(range(start_ind, end_ind), desc=f"Processing {part} data"):
+            mel_path = self._mel_dir / "ljspeech-mel-%05d.npy" % w_id
+            alignment_path = self._alignment_dir / f"{w_id}.npy"
+            wav_path = self._data_dir / "%05d.wav" % w_id
+            t_info = torchaudio.info(str(wav_path))
+            length = t_info.num_frames / t_info.sample_rate
+            index.append(
+                {
+                    "path": str(wav_path.absolute().resolve()),
+                    "text": text[w_id].lower(),
+                    "audio_len": length,
+                    "mel": np.load(mel_path),
+                    "alignment": np.load(alignment_path)
+                }
+            )
 
         return index
