@@ -21,20 +21,8 @@ class Trainer(BaseTrainer):
     Trainer class
     """
 
-    def __init__(
-            self,
-            model,
-            criterion,
-            metrics,
-            optimizer,
-            config,
-            device,
-            dataloaders,
-            waveglow_model,
-            lr_scheduler=None,
-            len_epoch=None,
-            skip_oom=True,
-    ):
+    def __init__(self, model, criterion, metrics, optimizer, config, device, dataloaders,
+                 waveglow_model, lr_scheduler=None, len_epoch=None, skip_oom=True):
         super().__init__(model, criterion, metrics, optimizer, lr_scheduler, config, device)
         self.skip_oom = skip_oom
         self.config = config
@@ -62,7 +50,7 @@ class Trainer(BaseTrainer):
         """
         Move all necessary tensors to the GPU
         """
-        for tensor_for_gpu in ["duration", "mel_target", "src_pos", "mel_pos", "text_encoded"]:
+        for tensor_for_gpu in ["alignment", "mel_target", "src_pos", "mel_pos", "text_encoded"]:
             batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
         return batch
 
