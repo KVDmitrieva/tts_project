@@ -4,32 +4,33 @@ import os
 from pathlib import Path
 
 import torch
+import numpy as np
 from tqdm import tqdm
 
+import utils
+import waveglow
+from text import text_to_sequence
+
 import hw_tts.model as module_model
-from hw_tts.trainer import Trainer
 from hw_tts.utils import ROOT_PATH
 from hw_tts.utils.object_loading import get_dataloaders
 from hw_tts.utils.parse_config import ConfigParser
-from hw_tts.metric.utils import calc_cer, calc_wer
+
 
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
 
-def main(config, out_file):
+def main(config, out_dir, test_file):
     logger = config.get_logger("test")
 
     # define cpu or gpu if possible
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # text_encoder
-    text_encoder = config.get_text_encoder()
-
     # setup data_loader instances
-    dataloaders = get_dataloaders(config, text_encoder)
+    dataloaders = get_dataloaders(config)
 
     # build model architecture
-    model = config.init_obj(config["arch"], module_model, n_class=len(text_encoder))
+    model = config.init_obj(config["arch"], module_model)
     logger.info(model)
 
     logger.info("Loading checkpoint: {} ...".format(config.resume))
@@ -43,73 +44,29 @@ def main(config, out_file):
     model = model.to(device)
     model.eval()
 
-    results = []
-    argmax_cer, argmax_wer = [], []
-    beam_cer, beam_wer = [], []
-    lm_beam_cer, lm_beam_wer = [], []
+    if not Path(out_dir).exists():
+        Path(out_dir).mkdir(exist_ok=True, parents=True)
+
+    with open(test_file, "r", encoding="utf-8") as f:
+        texts = f.readlines()
+
+    waveglow_model = utils.get_WaveGlow()
+    waveglow_model = waveglow_model.cuda()
+
     with torch.no_grad():
-        for batch_num, batch in enumerate(tqdm(dataloaders["test"])):
-            batch = Trainer.move_batch_to_device(batch, device)
-            output = model(**batch)
-            if type(output) is dict:
-                batch.update(output)
-            else:
-                batch["logits"] = output
-            batch["log_probs"] = torch.log_softmax(batch["logits"], dim=-1)
-            batch["log_probs_length"] = model.transform_input_lengths(
-                batch["spectrogram_length"]
+        for i, t in enumerate(tqdm(texts, desc="Processing texts")):
+            text_enc = text_to_sequence(t, "english_cleaners").to(device)
+            src_pos = np.arange(1, len(text_enc) + 1)
+
+            text_enc = torch.from_numpy(text_enc).long().unsqueeze(0).to(device)
+            src_pos = torch.from_numpy(src_pos).long().unsqueeze(0).to(device)
+
+            mel = model(text_enc, src_pos).transpose(1, 2)
+
+            waveglow.inference.inference(
+                mel, waveglow_model,
+                f"{out_dir}/_{i}_waveglow.wav"
             )
-            batch["probs"] = batch["log_probs"].exp().cpu()
-            batch["argmax"] = batch["probs"].argmax(-1)
-
-            for i in range(len(batch["text"])):
-                argmax = batch["argmax"][i]
-                argmax = argmax[: int(batch["log_probs_length"][i])]
-                pred_text_argmax = text_encoder.ctc_decode(argmax.cpu().numpy())
-                argmax_cer.append(calc_cer(batch["text"][i].lower(), pred_text_argmax) * 100)
-                argmax_wer.append(calc_wer(batch["text"][i].lower(), pred_text_argmax) * 100)
-
-                pred_texts_beam = text_encoder.ctc_beam_search(
-                            batch["probs"][i].cpu().numpy(),
-                            batch["log_probs_length"][i].cpu().numpy(),
-                            beam_size=20
-                        )
-                pred_texts_beam = [pred.text for pred in pred_texts_beam]
-                beam_cer.append(calc_cer(batch["text"][i].lower(), pred_texts_beam[0]) * 100)
-                beam_wer.append(calc_wer(batch["text"][i].lower(), pred_texts_beam[0]) * 100)
-
-                pred_texts_lm_beam = text_encoder.ctc_lm_beam_search(
-                            batch["log_probs"][i].cpu().numpy(),
-                            batch["log_probs_length"][i].cpu().numpy(),
-                            beam_size=100
-                        )
-                pred_texts_lm_beam = [pred.text for pred in pred_texts_lm_beam]
-                lm_beam_cer.append(calc_cer(batch["text"][i].lower(), pred_texts_lm_beam[0]) * 100)
-                lm_beam_wer.append(calc_wer(batch["text"][i].lower(), pred_texts_lm_beam[0]) * 100)
-
-                results.append(
-                    {
-                        "ground_truth": batch["text"][i],
-                        "pred_text_argmax": pred_text_argmax,
-                        "pred_text_beam_search": pred_texts_beam[:10],
-                        "pred_text_lm_beam_search": pred_texts_lm_beam[:10],
-                    }
-                )
-    results.append(
-        {
-            "CER (argmax)": sum(argmax_cer) / len(argmax_cer),
-            "WER (argmax)": sum(argmax_wer) / len(argmax_wer),
-            "CER (beam)": sum(beam_cer) / len(beam_cer),
-            "WER (beam)": sum(beam_wer) / len(beam_wer),
-            "CER (lm beam)": sum(lm_beam_cer) / len(lm_beam_cer),
-            "WER (lm beam)": sum(lm_beam_wer) / len(lm_beam_wer)
-        }
-    )
-    for key, val in results[-1].items():
-        print(key, val)
-
-    with Path(out_file).open("w") as f:
-        json.dump(results, f, indent=2)
 
 
 if __name__ == "__main__":
@@ -138,16 +95,16 @@ if __name__ == "__main__":
     args.add_argument(
         "-o",
         "--output",
-        default="output.json",
+        default="output",
         type=str,
         help="File to write results (.json)",
     )
     args.add_argument(
         "-t",
-        "--test-data-folder",
-        default=None,
+        "--test",
+        default=ROOT_PATH / "test_texts.txt",
         type=str,
-        help="Path to dataset",
+        help="Path to test texts",
     )
     args.add_argument(
         "-b",
@@ -181,30 +138,7 @@ if __name__ == "__main__":
         with Path(args.config).open() as f:
             config.config.update(json.load(f))
 
-    # if `--test-data-folder` was provided, set it as a default test set
-    if args.test_data_folder is not None:
-        test_data_folder = Path(args.test_data_folder).absolute().resolve()
-        assert test_data_folder.exists()
-        config.config["data"] = {
-            "test": {
-                "batch_size": args.batch_size,
-                "num_workers": args.jobs,
-                "datasets": [
-                    {
-                        "type": "CustomDirAudioDataset",
-                        "args": {
-                            "audio_dir": str(test_data_folder / "audio"),
-                            "transcription_dir": str(
-                                test_data_folder / "transcriptions"
-                            ),
-                        },
-                    }
-                ],
-            }
-        }
-
-    assert config.config.get("data", {}).get("test", None) is not None
     config["data"]["test"]["batch_size"] = args.batch_size
     config["data"]["test"]["n_jobs"] = args.jobs
 
-    main(config, args.output)
+    main(config, args.output, args.test)

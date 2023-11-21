@@ -3,28 +3,27 @@ pip install -r requirements.txt
 
 echo "Download train texts"
 gdown https://drive.google.com/u/0/uc?id=1-EdH0t0loc6vPiuVtXdhsDtzygWNSNZx
+mkdir data
 mv train.txt data/
 
 echo "Download mels"
 gdown https://drive.google.com/u/0/uc?id=1cJKJTmYd905a-9GFoo5gKjzhKjUVj83j
-mkdir data
-tar -xvf mel.tar.gz >> data
+tar -xvf mel.tar.gz -C data >> /dev/null
 rm mel.tar.gz
 
 echo "Download alignments"
 wget https://github.com/xcmyz/FastSpeech/raw/master/alignments.zip
-mkdir -p data/alignments
-unzip alignments.zip >> data/alignments
+unzip alignments.zip -d data >> /dev/null
 rm alignments.zip
 
 echo "Clone FastSpeech modules"
 git clone https://github.com/xcmyz/FastSpeech.git
 mv FastSpeech/text .
-mv FastSpeech/audio .
 mv FastSpeech/waveglow/* waveglow/
 mv FastSpeech/utils.py .
 mv FastSpeech/glow.py .
-rm -r FastSpeech
+mv FastSpeech/hparams.py .
+rm -rf FastSpeech
 
 echo "Download Waveglow checkpoint"
 gdown https://drive.google.com/u/0/uc?id=1WsibBTsuRg_SF2Z6L6NFRTT-NjEy1oTx

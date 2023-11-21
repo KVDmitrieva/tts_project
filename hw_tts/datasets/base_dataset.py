@@ -46,7 +46,7 @@ class BaseDataset(Dataset):
             "spectrogram": audio_spec,
             "duration": audio_wave.size(1) / self.config_parser["preprocessing"]["sr"],
             "text": data_dict["text"],
-            "text_encoded": text_to_sequence(data_dict["text"]),
+            "text_encoded": text_to_sequence(data_dict["text"], "english_cleaners"),
             "audio_path": audio_path,
             "mel": data_dict.get("mel", None),
             "alignment": data_dict.get("alignment", None)
