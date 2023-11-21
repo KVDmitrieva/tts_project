@@ -311,7 +311,7 @@ class FastSpeech(BaseModel):
         output = self.decoder(output, mel_pos)
         output = self._mask_tensor(output, mel_pos, mel_max_length)
         output = self.mel_linear(output)
-        return {"mel", output, "duration_predicted", duration_predictor_output}
+        return {"mel": output, "duration_predicted": duration_predictor_output}
 
     @torch.inference_mode
     def inference(self, text_encoded, src_pos, alpha=1.0, **batch):

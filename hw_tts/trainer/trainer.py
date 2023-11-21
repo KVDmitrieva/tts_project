@@ -124,7 +124,7 @@ class Trainer(BaseTrainer):
         if is_train:
             self.optimizer.zero_grad()
         outputs = self.model(**batch)
-        print(outputs)
+
         if type(outputs) is dict:
             batch.update(outputs)
         else:
