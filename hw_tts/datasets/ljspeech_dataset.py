@@ -32,20 +32,9 @@ class LJspeechDataset(BaseDataset):
         self._train_texts = ROOT_PATH / "data" / "train.txt" if text_path is None else Path(text_path)
         self._alignment_dir = ROOT_PATH / "data" / "alignments" if alignments_dir is None else Path(alignments_dir)
 
-        index = self._get_or_load_index(part)
+        index = self._create_index(part)
 
         super().__init__(index, *args, **kwargs)
-
-    def _get_or_load_index(self, part):
-        index_path = self._data_dir / f"{part}_index.json"
-        if index_path.exists():
-            with index_path.open() as f:
-                index = json.load(f)
-        else:
-            index = self._create_index(part)
-            with index_path.open("w") as f:
-                json.dump(index, f, indent=2)
-        return index
 
     def _create_index(self, part):
         index = []
