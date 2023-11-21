@@ -306,10 +306,22 @@ class FastSpeech(BaseModel):
 
     def forward(self, text_encoded, src_pos, mel_pos=None, mel_max_length=None, alignment=None, alpha=1.0, **batch):
         x, _ = self.encoder(text_encoded, src_pos)
+        if torch.isnan(x).sum() > 0:
+            print("BROKEN ENCODER")
         output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
+        if torch.isnan(output).sum() > 0:
+            print("BROKEN LR: OUTPUT")
+        if torch.isnan(duration_predictor_output).sum() > 0:
+            print("BROKEN LR: duration_predictor_output")
         output = self.decoder(output, mel_pos)
+        if torch.isnan(output).sum() > 0:
+            print("BROKEN DECODER")
         output = self._mask_tensor(output, mel_pos, mel_max_length)
+        if torch.isnan(output).sum() > 0:
+            print("BROKEN MASK")
         output = self.mel_linear(output)
+        if torch.isnan(output).sum() > 0:
+            print("BROKEN MEL LINEAR")
         return {"mel": output, "duration_predicted": duration_predictor_output}
 
     @torch.inference_mode
