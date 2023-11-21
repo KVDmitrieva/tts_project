@@ -65,7 +65,7 @@ class LJspeechDataset(BaseDataset):
         with open(self._train_texts, "r", encoding="utf-8") as f:
             text = f.readlines()
 
-        start_ind = 0 if part == "train" else int(self._train_ratio * len(text))
+        start_ind = 1 if part == "train" else int(self._train_ratio * len(text))
         end_ind = int(self._train_ratio * len(text)) if part == "train" else len(text)
 
         for w_id in tqdm(range(start_ind, end_ind), desc=f"Processing {part} data"):
@@ -77,7 +77,7 @@ class LJspeechDataset(BaseDataset):
             index.append(
                 {
                     "path": str(wav_path.absolute().resolve()),
-                    "text": text[w_id].lower(),
+                    "text": text[w_id - 1].lower(),
                     "audio_len": length,
                     "mel": np.load(mel_path),
                     "alignment": np.load(alignment_path)

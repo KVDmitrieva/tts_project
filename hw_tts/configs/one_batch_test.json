@@ -54,6 +54,7 @@
           "type": "LJspeechDataset",
           "args": {
             "part": "train",
+            "data_dir": "/kaggle/input/the-lj-speech-dataset/LJSpeech-1.1",
             "limit": 10
           }
         }
@@ -67,6 +68,7 @@
           "type": "LJspeechDataset",
           "args": {
             "part": "train",
+            "data_dir": "/kaggle/input/the-lj-speech-dataset/LJSpeech-1.1",
             "limit": 10
           }
         }
