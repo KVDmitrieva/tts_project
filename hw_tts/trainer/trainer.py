@@ -102,7 +102,7 @@ class Trainer(BaseTrainer):
                 )
                 self._log_predictions(**batch)
                 self._log_spectrogram(batch["mel_target"], "target")
-                self._log_spectrogram(batch["mel"], "prediction")
+                self._log_spectrogram(batch["mel"].detach(), "prediction")
                 self._log_waveglow_audio(batch["mel_target"])
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
