@@ -56,11 +56,11 @@ class MultiHeadAttention(nn.Module):
 
     def reset_parameters(self):
          # normal distribution initialization better than kaiming(default in pytorch)
-        nn.init.normal_(self.w_qs.weight, mean=0,
+        nn.init.normal_(self.w_qs.weight, mean=0.,
                         std=np.sqrt(2.0 / (self.d_model + self.d_k)))
-        nn.init.normal_(self.w_ks.weight, mean=0,
+        nn.init.normal_(self.w_ks.weight, mean=0.,
                         std=np.sqrt(2.0 / (self.d_model + self.d_k)))
-        nn.init.normal_(self.w_vs.weight, mean=0,
+        nn.init.normal_(self.w_vs.weight, mean=0.,
                         std=np.sqrt(2.0 / (self.d_model + self.d_v)))
 
     def forward(self, q, k, v, mask=None):
@@ -128,13 +128,11 @@ class FFTBlock(nn.Module):
     def forward(self, enc_input, non_pad_mask=None, slf_attn_mask=None):
         enc_output, enc_slf_attn = self.slf_attn(
             enc_input, enc_input, enc_input, mask=slf_attn_mask)
-        print("ATT OUT", torch.isnan(enc_output).sum())
-        print("ATT", torch.isnan(enc_slf_attn).sum())
+
         if non_pad_mask is not None:
             enc_output *= non_pad_mask
 
         enc_output = self.pos_ffn(enc_output)
-        print("POS", torch.isnan(enc_output).sum())
 
         if non_pad_mask is not None:
             enc_output *= non_pad_mask
