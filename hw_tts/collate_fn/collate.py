@@ -23,6 +23,7 @@ def collate_fn(dataset_items: List[dict]):
         mel_max_len = max(mel_max_len, item["mel"].shape[-1])
         mel_pos.append(torch.arange(1, item["mel"].shape[-1] + 1))
         src_pos.append(torch.arange(1, len(item["text_encoded"]) + 1))
+        print(text[-1], text_encoded[-1])
 
     return {
         "text": text,
