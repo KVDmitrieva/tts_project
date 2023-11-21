@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torch.nn.functional as F
 
 from hw_tts.model.base_model import BaseModel
@@ -238,15 +239,24 @@ class Encoder(nn.Module):
             for _ in range(num_layers)])
 
     def forward(self, src_seq, src_pos, return_attns=False):
+        print("START ENC")
+        print("SRC NAN NUM", torch.isnan(src_seq).sum())
+        print("SRC POS NAN NUM", torch.isnan(src_pos).sum())
         enc_slf_attn_list = []
 
         slf_attn_mask = get_attn_key_pad_mask(seq_k=src_seq, seq_q=src_seq)
         non_pad_mask = get_non_pad_mask(src_seq)
 
-        enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos)
+        print("SLF ATTN MASK NAN NUM", torch.isnan(slf_attn_mask).sum())
+        print("NON PAD MASK NAN NUM", torch.isnan(non_pad_mask).sum())
+        print("SRC EMB", torch.isnan(self.src_word_emb(src_seq)).sum())
+        print("POS", torch.isnan(self.position_enc(src_pos)).sum())
 
+        enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos)
+        print("NON ENC OUT", torch.isnan(enc_output).sum())
         for enc_layer in self.layer_stack:
             enc_output, enc_slf_attn = enc_layer(enc_output, non_pad_mask=non_pad_mask, slf_attn_mask=slf_attn_mask)
+            print("FFT OUT", torch.isnan(enc_output).sum())
             if return_attns:
                 enc_slf_attn_list += [enc_slf_attn]
 
