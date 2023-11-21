@@ -5,10 +5,11 @@ from random import shuffle
 import PIL
 import pandas as pd
 import torch
-import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
+
+import waveglow
 
 from hw_tts.trainer.base_trainer import BaseTrainer
 from hw_tts.logger.utils import plot_spectrogram_to_buf
@@ -29,9 +30,9 @@ class Trainer(BaseTrainer):
             config,
             device,
             dataloaders,
+            waveglow_model,
             lr_scheduler=None,
             len_epoch=None,
-            beam_size=None,
             skip_oom=True,
     ):
         super().__init__(model, criterion, metrics, optimizer, lr_scheduler, config, device)
@@ -48,8 +49,7 @@ class Trainer(BaseTrainer):
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
         self.lr_scheduler = lr_scheduler
         self.log_step = 50
-        self.beam_size = beam_size if beam_size is not None else 3
-
+        self.waveglow_model = waveglow_model
         self.train_metrics = MetricTracker(
             "loss", "mel_loss", "duration_loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
         )
@@ -115,6 +115,7 @@ class Trainer(BaseTrainer):
                 self._log_predictions(**batch)
                 self._log_spectrogram(batch["mel_target"], "target")
                 self._log_spectrogram(batch["mel"], "prediction")
+                self._log_waveglow_audio(batch["mel_target"])
                 self._log_audio(batch["audio"])
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
@@ -182,6 +183,7 @@ class Trainer(BaseTrainer):
             self._log_predictions(**batch)
             self._log_spectrogram(batch["mel_target"], "target")
             self._log_spectrogram(batch["mel"], "prediction")
+            self._log_waveglow_audio(batch["mel_target"])
             self._log_audio(batch["audio"])
 
         # add histogram of model parameters to the tensorboard
@@ -208,11 +210,13 @@ class Trainer(BaseTrainer):
         shuffle(res_tuple)
         rows = {}
         for txt, audio_src, path, mel_pred, mel_src in res_tuple[:examples_to_log]:
+            wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
             rows[Path(path).name] = {
                 "text": txt,
                 "target mel": mel_src,
                 "predicted mel": mel_pred,
                 "target audio": audio_src,
+                "predicted audio": wav
             }
         self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
 
@@ -224,6 +228,11 @@ class Trainer(BaseTrainer):
     def _log_audio(self, audio_batch, name="audio"):
         audio = random.choice(audio_batch.cpu())
         self.writer.add_audio(name, audio, self.config["preprocessing"]["sr"])
+
+    def _log_waveglow_audio(self, spectrogram_batch, name="waveglow audio"):
+        mel = random.choice(spectrogram_batch)
+        audio = waveglow.inference.get_wav(mel.unsqueeze(0).transpose(1, 2), self.waveglow_model)
+        self.writer.add_audio(name, audio.cpu(), self.config["preprocessing"]["sr"])
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):
