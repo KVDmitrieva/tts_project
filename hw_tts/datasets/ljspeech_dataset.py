@@ -22,9 +22,8 @@ class LJspeechDataset(BaseDataset):
     def __init__(self, part, mel_dir=None, alignments_dir=None, data_dir=None,
                  text_path=None, train_ratio=0.92, *args, **kwargs):
         if data_dir is None:
-            data_dir = ROOT_PATH / "data" / "datasets"
+            data_dir = ROOT_PATH / "data" / "datasets" / "ljspeech"
             data_dir.mkdir(exist_ok=True, parents=True)
-            data_dir /= "ljspeech"
         else:
             data_dir = Path(data_dir)
         self._data_dir = data_dir
