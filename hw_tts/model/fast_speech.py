@@ -1,7 +1,93 @@
+import numpy as np
 import torch.nn.functional as F
 
 from hw_tts.model.base_model import BaseModel
 from hw_tts.model.utils import *
+
+
+class ScaledDotProductAttention(nn.Module):
+    ''' Scaled Dot-Product Attention '''
+
+    def __init__(self, temperature, attn_dropout=0.1):
+        super().__init__()
+        self.temperature = temperature
+        self.dropout = nn.Dropout(attn_dropout)
+        self.softmax = nn.Softmax(dim=2)
+
+    def forward(self, q, k, v, mask=None):
+        scaled_dot = torch.matmul(q, k.transpose(1, 2))
+        scaled_dot /= self.temperature
+        if mask is not None:
+            scaled_dot = scaled_dot.masked_fill(mask == 0, float('-inf'))
+
+        attn = self.softmax(scaled_dot)
+        attn = self.dropout(attn)
+
+        output = torch.matmul(attn, v)
+        return output, attn
+
+
+class MultiHeadAttention(nn.Module):
+    ''' Multi-Head Attention module '''
+
+    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
+        super().__init__()
+
+        self.n_head = n_head
+        self.d_k = d_k
+        self.d_v = d_v
+        self.d_model = d_model
+
+        self.w_qs = nn.Linear(d_model, n_head * d_k)
+        self.w_ks = nn.Linear(d_model, n_head * d_k)
+        self.w_vs = nn.Linear(d_model, n_head * d_v)
+
+        self.attention = ScaledDotProductAttention(
+            temperature=d_k**0.5)
+        self.layer_norm = nn.LayerNorm(d_model)
+
+        self.fc = nn.Linear(n_head * d_v, d_model)
+        nn.init.xavier_normal_(self.fc.weight)
+
+        self.dropout = nn.Dropout(dropout)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+         # normal distribution initialization better than kaiming(default in pytorch)
+        nn.init.normal_(self.w_qs.weight, mean=0,
+                        std=np.sqrt(2.0 / (self.d_model + self.d_k)))
+        nn.init.normal_(self.w_ks.weight, mean=0,
+                        std=np.sqrt(2.0 / (self.d_model + self.d_k)))
+        nn.init.normal_(self.w_vs.weight, mean=0,
+                        std=np.sqrt(2.0 / (self.d_model + self.d_v)))
+
+    def forward(self, q, k, v, mask=None):
+        d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
+
+        sz_b, len_q, _ = q.size()
+        sz_b, len_k, _ = k.size()
+        sz_b, len_v, _ = v.size()
+
+        residual = q
+
+        q = self.w_qs(q).view(sz_b, len_q, n_head, d_k)
+        k = self.w_ks(k).view(sz_b, len_k, n_head, d_k)
+        v = self.w_vs(v).view(sz_b, len_v, n_head, d_v)
+
+        q = q.permute(2, 0, 1, 3).contiguous().view(-1, len_q, d_k)  # (n*b) x lq x dk
+        k = k.permute(2, 0, 1, 3).contiguous().view(-1, len_k, d_k)  # (n*b) x lk x dk
+        v = v.permute(2, 0, 1, 3).contiguous().view(-1, len_v, d_v)  # (n*b) x lv x dv
+
+        if mask is not None:
+            mask = mask.repeat(n_head, 1, 1)  # (n*b) x .. x ..
+        output, attn = self.attention(q, k, v, mask=mask)
+
+        output = output.view(n_head, sz_b, len_q, d_v)
+        output = output.permute(1, 2, 0, 3).contiguous().view(sz_b, len_q, -1)  # b x lq x (n*dv)
+
+        output = self.dropout(self.fc(output))
+        output = self.layer_norm(output + residual)
 
 
 class PositionWiseFeedForward(nn.Module):
@@ -31,9 +117,9 @@ class PositionWiseFeedForward(nn.Module):
 class FFTBlock(nn.Module):
     """FFT Block"""
 
-    def __init__(self, embed_dim, hidden_dim, num_heads, dropout=0.1):
+    def __init__(self, embed_dim, hidden_dim, k_dim, v_dim, num_heads, dropout=0.1):
         super(FFTBlock, self).__init__()
-        self.slf_attn = nn.MultiheadAttention(num_heads=num_heads, embed_dim=embed_dim, dropout=dropout)
+        self.slf_attn = MultiHeadAttention(n_head=num_heads, d_model=embed_dim, d_k=k_dim, d_v=v_dim, dropout=dropout)
         self.pos_ffn = PositionWiseFeedForward(embed_dim, hidden_dim, dropout=dropout)
 
     def forward(self, enc_input, non_pad_mask=None, slf_attn_mask=None):
@@ -144,7 +230,8 @@ class Encoder(nn.Module):
         self.position_enc = nn.Embedding(max_seq_len + 1, encoder_dim, padding_idx=pad)
 
         self.layer_stack = nn.ModuleList([
-            FFTBlock(encoder_dim, encoder_conv1d_filter_size, encoder_head, dropout=dropout)
+            FFTBlock(encoder_dim, encoder_conv1d_filter_size, encoder_dim // encoder_head,
+                     encoder_dim // encoder_head, encoder_head, dropout=dropout)
             for _ in range(num_layers)])
 
     def forward(self, src_seq, src_pos, return_attns=False):
@@ -177,7 +264,8 @@ class Decoder(nn.Module):
         self.position_enc = nn.Embedding(max_seq_len + 1, decoder_dim, padding_idx=pad)
 
         self.layer_stack = nn.ModuleList([
-            FFTBlock(decoder_dim, decoder_conv1d_filter_size, decoder_head, dropout=dropout)
+            FFTBlock(decoder_dim, decoder_conv1d_filter_size, decoder_dim // decoder_head,
+                     decoder_dim // decoder_head, decoder_head, dropout=dropout)
             for _ in range(num_layers)])
 
     def forward(self, enc_seq, enc_pos, return_attns=False):
