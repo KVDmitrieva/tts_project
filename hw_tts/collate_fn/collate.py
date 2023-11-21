@@ -10,8 +10,7 @@ def collate_fn(dataset_items: List[dict]):
     """
     Collate and pad fields in dataset items
     """
-    mel, text_encoded = [], []
-    text, text_encoded_length = [], []
+    text, mel, text_encoded = [], [], []
     alignment, audio = [], []
     src_pos, mel_pos = [], []
     mel_max_len = 0
@@ -23,7 +22,7 @@ def collate_fn(dataset_items: List[dict]):
         text_encoded.append(item["text_encoded"])
         mel_max_len = max(mel_max_len, item["mel"].shape[-1])
         mel_pos.append(torch.arange(1, item["mel"].shape[-1] + 1))
-        src_pos.append(torch.arange(1, text_encoded_length[-1] + 1))
+        src_pos.append(torch.arange(1, len(item["text_encoded"]) + 1))
 
     return {
         "text": text,
