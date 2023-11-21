@@ -89,6 +89,8 @@ class MultiHeadAttention(nn.Module):
         output = self.dropout(self.fc(output))
         output = self.layer_norm(output + residual)
 
+        return output, attn
+
 
 class PositionWiseFeedForward(nn.Module):
     """A two-feed-forward-layer module"""
