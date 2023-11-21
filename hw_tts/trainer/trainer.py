@@ -198,8 +198,8 @@ class Trainer(BaseTrainer):
         for i in range(examples_to_log):
             txt, mel_pred, mel_src = res_tuple[i]
             wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
-            pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.detach().cpu()))
-            target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.detach().cpu()))
+            pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.T.detach().cpu()))
+            target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.T.detach().cpu()))
             self.writer.add_text("text example", txt)
             self.writer.add_image("mel prediction example", ToTensor()(pred))
             self.writer.add_image("mel target example", ToTensor()(target))
@@ -208,7 +208,7 @@ class Trainer(BaseTrainer):
 
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
         spectrogram = random.choice(spectrogram_batch.cpu())
-        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram))
+        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram.T))
         self.writer.add_image(name, ToTensor()(image))
 
     def _log_audio(self, audio_batch, name="audio"):

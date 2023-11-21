@@ -15,15 +15,15 @@ class ScaledDotProductAttention(nn.Module):
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, q, k, v, mask=None):
-        scaled_dot = torch.matmul(q, k.transpose(1, 2))
+        scaled_dot = torch.bmm(q, k.transpose(1, 2))
         scaled_dot /= self.temperature
         if mask is not None:
-            scaled_dot = scaled_dot.masked_fill(mask == 0, float('-inf'))
+            scaled_dot = scaled_dot.masked_fill(mask == 0, -torch.inf)
 
         attn = self.softmax(scaled_dot)
         attn = self.dropout(attn)
 
-        output = torch.matmul(attn, v)
+        output = torch.bmm(attn, v)
         return output, attn
 
 
@@ -176,9 +176,8 @@ class DurationPredictor(nn.Module):
 
         out = self.linear_layer(encoder_output)
         out = self.relu(out)
-        out = out.squeeze()
-        if not self.training:
-            out = out.unsqueeze(0)
+        out = out.squeeze(-1)
+
         return out
 
 
