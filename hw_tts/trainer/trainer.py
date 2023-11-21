@@ -199,7 +199,7 @@ class Trainer(BaseTrainer):
             txt, mel_pred, mel_src = res_tuple[i]
             wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
             pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.detach().cpu()))
-            target = PIL.Image.open(plot_spectrogram_to_buf(mel_target.detach().cpu()))
+            target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.detach().cpu()))
             self.writer.add_text("text example", txt)
             self.writer.add_image("mel prediction example", ToTensor()(pred))
             self.writer.add_image("mel target example", ToTensor()(target))
