@@ -73,7 +73,7 @@ class LJspeechDataset(BaseDataset):
         for w_id in tqdm(range(start_ind, end_ind), desc=f"Processing {part} data"):
             mel_path = self._mel_dir / ("ljspeech-mel-%05d.npy" % w_id)
             alignment_path = self._alignment_dir / f"{w_id}.npy"
-            wav_path = self._data_dir / ("%05d.wav" % w_id)
+            wav_path = self._data_dir / ("LJ001-%05d.wav" % w_id)
             t_info = torchaudio.info(str(wav_path))
             length = t_info.num_frames / t_info.sample_rate
             index.append(
