@@ -25,6 +25,8 @@ class LJspeechDataset(BaseDataset):
             data_dir = ROOT_PATH / "data" / "datasets"
             data_dir.mkdir(exist_ok=True, parents=True)
             data_dir /= "ljspeech"
+        else:
+            data_dir = Path(data_dir)
         self._data_dir = data_dir
         self._train_ratio = train_ratio
         self._mel_dir = ROOT_PATH / "data" / "mels" if mel_dir is None else Path(mel_dir)
