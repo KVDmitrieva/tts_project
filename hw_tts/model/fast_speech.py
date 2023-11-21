@@ -16,10 +16,10 @@ class ScaledDotProductAttention(nn.Module):
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, q, k, v, mask=None):
-        scaled_dot = torch.bmm(q, k.transpose(1, 2))
+        scaled_dot = torch.bmm(q, k.transpose(-1, -2))
         scaled_dot /= self.temperature
         if mask is not None:
-            scaled_dot = scaled_dot.masked_fill(mask == 0, -torch.inf)
+            scaled_dot = scaled_dot.masked_fill(mask, -torch.inf)
 
         attn = self.softmax(scaled_dot)
         attn = self.dropout(attn)
