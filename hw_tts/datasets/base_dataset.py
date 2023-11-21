@@ -33,7 +33,6 @@ class BaseDataset(Dataset):
 
         self._assert_index_is_valid(index)
         index = self._filter_records_from_dataset(index, max_audio_length, max_text_length, limit)
-        index = self._sort_index(index)
         self._index: List[dict] = index
 
     def __getitem__(self, ind):

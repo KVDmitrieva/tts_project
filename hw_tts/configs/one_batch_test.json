@@ -15,10 +15,34 @@
     "spectrogram": []
   },
   "arch": {
-    "type": "BaselineModel",
+    "type": "FastSpeech",
     "args": {
-      "n_feats": 128,
-      "fc_hidden": 512
+      "encoder_params": {
+        "num_layers":  4,
+        "encoder_dim":  256,
+        "encoder_conv1d_filter_size":  1024,
+        "encoder_head":  2,
+        "dropout": 0.1,
+        "max_seq_len":  3000,
+        "vocab_size": 300
+      },
+      "lr_params": {
+        "duration_predictor_config": {
+          "encoder_dim":  256,
+          "duration_predictor_kernel_size":  3,
+          "duration_predictor_filter_size":  256,
+          "dropout": 0.1
+        }
+      },
+      "decoder_params": {
+        "num_layers":  4,
+        "decoder_dim":  256,
+        "decoder_conv1d_filter_size":  1024,
+        "decoder_head":  2,
+        "dropout":  0.1,
+        "max_seq_len": 3000
+      },
+      "num_mels": 80
     }
   },
   "data": {
@@ -27,11 +51,9 @@
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LibrispeechDataset",
+          "type": "LJspeechDataset",
           "args": {
-            "part": "dev-clean",
-            "max_audio_length": 20.0,
-            "max_text_length": 200,
+            "part": "train",
             "limit": 10
           }
         }
@@ -42,11 +64,9 @@
       "num_workers": 0,
       "datasets": [
         {
-          "type": "LibrispeechDataset",
+          "type": "LJspeechDataset",
           "args": {
-            "part": "dev-clean",
-            "max_audio_length": 20.0,
-            "max_text_length": 200,
+            "part": "train",
             "limit": 10
           }
         }
@@ -54,48 +74,35 @@
     }
   },
   "optimizer": {
-    "type": "SGD",
+    "type": "Adam",
     "args": {
-      "lr": 1e-2
+      "lr": 1e-3
     }
   },
   "loss": {
-    "type": "CTCLoss",
+    "type": "FastSpeechLoss",
     "args": {}
   },
-  "metrics": [
-    {
-      "type": "ArgmaxWERMetric",
-      "args": {
-        "name": "WER (argmax)"
-      }
-    },
-    {
-      "type": "ArgmaxCERMetric",
-      "args": {
-        "name": "CER (argmax)"
-      }
-    }
-  ],
+  "metrics": [],
   "lr_scheduler": {
     "type": "OneCycleLR",
     "args": {
       "steps_per_epoch": 100,
-      "epochs": 51,
+      "epochs": 11,
       "anneal_strategy": "cos",
-      "max_lr": 1e-2,
+      "max_lr": 1e-3,
       "pct_start": 0.2
     }
   },
   "trainer": {
-    "epochs": 50,
+    "epochs": 10,
     "save_dir": "saved/",
     "save_period": 5,
     "verbosity": 2,
     "monitor": "min val_loss",
     "early_stop": 100,
     "visualize": "wandb",
-    "wandb_project": "asr_project",
+    "wandb_project": "tts_project",
     "len_epoch": 100,
     "grad_norm_clip": 10
   }

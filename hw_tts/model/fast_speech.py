@@ -169,15 +169,15 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """ Decoder """
 
-    def __init__(self, num_layers, decoder_dim, encoder_conv1d_filter_size,
-                 encoder_head, dropout, max_seq_len, pad=0):
+    def __init__(self, num_layers, decoder_dim, decoder_conv1d_filter_size,
+                 decoder_head, dropout, max_seq_len, pad=0):
 
         super(Decoder, self).__init__()
 
         self.position_enc = nn.Embedding(max_seq_len + 1, decoder_dim, padding_idx=pad)
 
         self.layer_stack = nn.ModuleList([
-            FFTBlock(decoder_dim, encoder_conv1d_filter_size, encoder_head, dropout=dropout)
+            FFTBlock(decoder_dim, decoder_conv1d_filter_size, decoder_head, dropout=dropout)
             for _ in range(num_layers)])
 
     def forward(self, enc_seq, enc_pos, return_attns=False):
