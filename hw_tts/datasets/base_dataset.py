@@ -37,16 +37,9 @@ class BaseDataset(Dataset):
 
     def __getitem__(self, ind):
         data_dict = self._index[ind]
-        audio_path = data_dict["path"]
-        audio_wave = self.load_audio(audio_path)
-        audio_wave, audio_spec = self.process_wave(audio_wave)
         return {
-            "audio": audio_wave,
-            "spectrogram": audio_spec,
-            "duration": audio_wave.size(1) / self.config_parser["preprocessing"]["sr"],
             "text": data_dict["text"],
             "text_encoded": text_to_sequence(data_dict["text"], "english_cleaners"),
-            "audio_path": audio_path,
             "mel": data_dict.get("mel", None),
             "alignment": data_dict.get("alignment", None)
         }
@@ -86,15 +79,6 @@ class BaseDataset(Dataset):
             index: list, max_audio_length, max_text_length, limit
     ) -> list:
         initial_size = len(index)
-        if max_audio_length is not None:
-            exceeds_audio_length = np.array([el["audio_len"] for el in index]) >= max_audio_length
-            _total = exceeds_audio_length.sum()
-            logger.info(
-                f"{_total} ({_total / initial_size:.1%}) records are longer then "
-                f"{max_audio_length} seconds. Excluding them."
-            )
-        else:
-            exceeds_audio_length = False
 
         initial_size = len(index)
         if max_text_length is not None:
@@ -112,7 +96,7 @@ class BaseDataset(Dataset):
         else:
             exceeds_text_length = False
 
-        records_to_filter = exceeds_text_length | exceeds_audio_length
+        records_to_filter = exceeds_text_length
 
         if records_to_filter is not False and records_to_filter.any():
             _total = records_to_filter.sum()
@@ -130,13 +114,6 @@ class BaseDataset(Dataset):
     @staticmethod
     def _assert_index_is_valid(index):
         for entry in index:
-            assert "audio_len" in entry, (
-                "Each dataset item should include field 'audio_len'"
-                " - duration of audio (in seconds)."
-            )
-            assert "path" in entry, (
-                "Each dataset item should include field 'path'" " - path to audio file."
-            )
             assert "text" in entry, (
                 "Each dataset item should include field 'text'"
                 " - text transcription of the audio."

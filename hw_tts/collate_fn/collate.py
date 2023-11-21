@@ -12,7 +12,6 @@ def collate_fn(dataset_items: List[dict]):
     """
     mel, text_encoded = [], []
     text, text_encoded_length = [], []
-    mel_length, audio_path = [], []
     alignment, audio = [], []
     src_pos, mel_pos = [], []
     mel_max_len = 0
@@ -25,15 +24,11 @@ def collate_fn(dataset_items: List[dict]):
             mel_pos.append(torch.arange(1, item["mel"].shape[-1] + 1))
 
         text.append(item["text"])
-        audio.append(item["audio"])
-        audio_path.append(item["audio_path"])
         text_encoded.append(item["text_encoded"].squeeze(0))
         src_pos.append(torch.arange(1, text_encoded_length[-1] + 1))
 
     return {
         "text": text,
-        "audio": audio,
-        "audio_path": audio_path,
         "alignment": alignment if len(mel) > 0 else None,
         "src_pos": pad_sequence(src_pos, batch_first=True),
         "mel_max_len": alignment if len(mel) > 0 else None,

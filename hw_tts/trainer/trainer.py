@@ -116,7 +116,6 @@ class Trainer(BaseTrainer):
                 self._log_spectrogram(batch["mel_target"], "target")
                 self._log_spectrogram(batch["mel"], "prediction")
                 self._log_waveglow_audio(batch["mel_target"])
-                self._log_audio(batch["audio"])
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
@@ -184,7 +183,6 @@ class Trainer(BaseTrainer):
             self._log_spectrogram(batch["mel_target"], "target")
             self._log_spectrogram(batch["mel"], "prediction")
             self._log_waveglow_audio(batch["mel_target"])
-            self._log_audio(batch["audio"])
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -201,21 +199,20 @@ class Trainer(BaseTrainer):
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
 
-    def _log_predictions(self, text, audio, audio_path, mel, mel_target, examples_to_log=10, *args, **kwargs):
+    def _log_predictions(self, text, mel, mel_target, examples_to_log=10, *args, **kwargs):
 
         if self.writer is None:
             return
 
-        res_tuple = list(zip(text, audio, audio_path, mel, mel_target))
+        res_tuple = list(zip(text, mel, mel_target))
         shuffle(res_tuple)
         rows = {}
-        for txt, audio_src, path, mel_pred, mel_src in res_tuple[:examples_to_log]:
+        for i, txt, mel_pred, mel_src in enumerate(res_tuple[:examples_to_log]):
             wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
-            rows[Path(path).name] = {
+            rows[i] = {
                 "text": txt,
                 "target mel": mel_src,
                 "predicted mel": mel_pred,
-                "target audio": audio_src,
                 "predicted audio": wav
             }
         self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
