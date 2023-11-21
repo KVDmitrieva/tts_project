@@ -188,23 +188,24 @@ class Trainer(BaseTrainer):
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
 
-    def _log_predictions(self, text, mel, mel_target, examples_to_log=10, *args, **kwargs):
+    def _log_predictions(self, text, mel, mel_target, examples_to_log=3, *args, **kwargs):
 
         if self.writer is None:
             return
 
         res_tuple = list(zip(text, mel, mel_target))
         shuffle(res_tuple)
-        rows = {}
+
         for i in range(examples_to_log):
             txt, mel_pred, mel_src = res_tuple[i]
             wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
-            rows[txt] = {
-                "target mel": mel_src,
-                "predicted mel": mel_pred,
-                "predicted audio": wav
-            }
-        self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
+            pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.cpu()))
+            target = PIL.Image.open(plot_spectrogram_to_buf(mel_target.cpu()))
+            self.writer.add_text("text example", txt)
+            self.writer.add_image("mel prediction example", ToTensor()(pred))
+            self.writer.add_image("mel target example", ToTensor()(target))
+            self.writer.add_audio("audio example", wav.cpu(), self.config["preprocessing"]["sr"])
+
 
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
         spectrogram = random.choice(spectrogram_batch.cpu())
