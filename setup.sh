@@ -28,4 +28,4 @@ mv FastSpeech/waveglow/* waveglow/
 mv FastSpeech/utils.py .
 mv FastSpeech/glow.py .
 mv FastSpeech/hparams.py .
-#rm -rf FastSpeech
+rm -rf FastSpeech
