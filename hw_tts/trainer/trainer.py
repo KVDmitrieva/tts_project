@@ -198,7 +198,7 @@ class Trainer(BaseTrainer):
 
         for i in range(examples_to_log):
             txt, mel_pred, mel_src = res_tuple[i]
-            wav = waveglow.inference.get_wav(mel_pred.unsqueeze(0).transpose(1, 2), self.waveglow_model)
+            wav = waveglow.inference.get_wav(mel_pred.contiguous().unsqueeze(0).transpose(1, 2), self.waveglow_model)
             pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.T.detach().cpu()))
             target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.T.detach().cpu()))
             self.writer.add_text("text example", txt)
@@ -218,7 +218,7 @@ class Trainer(BaseTrainer):
 
     def _log_waveglow_audio(self, spectrogram_batch, name="waveglow audio"):
         mel = random.choice(spectrogram_batch)
-        audio = waveglow.inference.get_wav(mel.unsqueeze(0).transpose(1, 2), self.waveglow_model)
+        audio = waveglow.inference.get_wav(mel.contiguous().unsqueeze(0).transpose(1, 2), self.waveglow_model)
         self.writer.add_audio(name, audio.cpu(), self.config["preprocessing"]["sr"])
 
     @torch.no_grad()
