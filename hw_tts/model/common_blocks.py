@@ -46,7 +46,7 @@ class LengthRegulator(nn.Module):
 
         duration_predictor_output = (alpha * (duration_predictor_output + 0.5)).int()
         output = self._regulate_length(x, duration_predictor_output, mel_max_length)
-        mel_pos = torch.arange(1, duration_predictor_output.size(1) + 1).unsqueeze(0).to(x.device)
+        mel_pos = torch.arange(1, output.size(1) + 1).unsqueeze(0).to(x.device)
 
         return output, mel_pos
 
