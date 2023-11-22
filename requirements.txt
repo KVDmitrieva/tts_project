@@ -16,3 +16,4 @@ torchaudio~=2.0.0
 pillow
 gdown
 inflect
+pyworld
