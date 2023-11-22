@@ -199,7 +199,7 @@ class Trainer(BaseTrainer):
         for i in range(examples_to_log):
             txt, mel_pred, mel_src, length = res_tuple[i]
             mel_pred = mel_pred[:length, :]
-            mel_target = mel_target[:length, :]
+            mel_src = mel_src[:length, :]
             wav = waveglow.inference.get_wav(mel_pred.contiguous().unsqueeze(0).transpose(1, 2), self.waveglow_model)
             pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.T.detach().cpu()))
             target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.T.detach().cpu()))
