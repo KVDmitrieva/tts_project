@@ -55,6 +55,7 @@
           "args": {
             "part": "val",
             "mel_dir": "/kaggle/input/ljseech-mels/mels",
+            "pitch_dir": "/kaggle/input/pitches/pitches",
             "limit": 10
           }
         }
@@ -69,6 +70,7 @@
           "args": {
             "part": "val",
             "mel_dir": "/kaggle/input/ljseech-mels/mels",
+            "pitch_dir": "/kaggle/input/pitches/pitches",
             "limit": 10
           }
         }

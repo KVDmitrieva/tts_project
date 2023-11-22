@@ -6,15 +6,15 @@ gdown https://drive.google.com/u/0/uc?id=1-EdH0t0loc6vPiuVtXdhsDtzygWNSNZx
 mkdir data
 mv train.txt data/
 
-echo "Download mels"
-gdown https://drive.google.com/u/0/uc?id=1cJKJTmYd905a-9GFoo5gKjzhKjUVj83j
-tar -xvf mel.tar.gz -C data >> /dev/null
-rm mel.tar.gz
-
-echo "Download pitches"
-gdown https://drive.google.com/uc?id=1JdeYK7xm_ABaJZtc7CQiBdHSQnFGPA9F
-tar -xvf pitches.tar -C data >> /dev/null
-rm pitches.tar
+#echo "Download mels"
+#gdown https://drive.google.com/u/0/uc?id=1cJKJTmYd905a-9GFoo5gKjzhKjUVj83j
+#tar -xvf mel.tar.gz -C data >> /dev/null
+#rm mel.tar.gz
+#
+#echo "Download pitches"
+#gdown https://drive.google.com/uc?id=1JdeYK7xm_ABaJZtc7CQiBdHSQnFGPA9F
+#tar -xvf pitches.tar -C data >> /dev/null
+#rm pitches.tar
 
 echo "Download alignments"
 wget https://github.com/xcmyz/FastSpeech/raw/master/alignments.zip
