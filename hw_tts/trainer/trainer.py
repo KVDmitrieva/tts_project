@@ -200,7 +200,8 @@ class Trainer(BaseTrainer):
         for i in range(examples_to_log):
             txt, pos, mel_src, length = text_encoded[i].detach(), src_pos[i].detach(), mel_target[i].detach(), mel_len[i]
 
-            # mel_pred = self.model.inference(txt.unsqueeze(0), pos.unsqueeze(0))
+            mel_pred = self.model.inference(txt.unsqueeze(0), pos.unsqueeze(0))
+            print(mel_pred.shape)
             #
             # mel_pred = mel_pred[:length, :]
             # mel_src = mel_src[:length, :]
