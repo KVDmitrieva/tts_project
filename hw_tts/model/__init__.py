@@ -1,5 +1,7 @@
-from hw_tts.model.fast_speech import FastSpeech
+from hw_tts.model.fastspeech import FastSpeech
+from hw_tts.model.fastspeech2 import FastSpeech2
 
 __all__ = [
-    "FastSpeech"
+    "FastSpeech",
+    "FastSpeech2"
 ]
