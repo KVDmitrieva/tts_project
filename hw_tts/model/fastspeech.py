@@ -75,8 +75,9 @@ class FastSpeech(BaseModel):
 
     @torch.inference_mode
     def inference(self, text_encoded, src_pos, alpha=1.0, **batch):
+        self.eval()
         x, _ = self.encoder(text_encoded, src_pos)
         output, mel_pos = self.length_regulator(x, alpha)
         output = self.decoder(output, mel_pos)
         output = self.mel_linear(output)
-        return {"mel": output}
+        return output
