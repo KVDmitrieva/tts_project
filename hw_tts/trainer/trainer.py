@@ -144,9 +144,7 @@ class Trainer(BaseTrainer):
 
         for key in loss_out.keys():
             metrics.update(key, batch[key].item())
-        # metrics.update("loss", batch["loss"].item())
-        # metrics.update("mel_loss", batch["mel_loss"].item())
-        # metrics.update("duration_loss", batch["duration_loss"].item())
+
         for met in self.metrics:
             metrics.update(met.name, met(**batch))
         return batch
@@ -196,26 +194,25 @@ class Trainer(BaseTrainer):
     def _log_predictions(self, text_encoded, src_pos, mel_target, mel_len, examples_to_log=3, *args, **kwargs):
         if self.writer is None:
             return
-        self.model.eval()
-        with torch.no_grad():
-            for i in range(examples_to_log):
-                txt, pos, mel_src, length = text_encoded[i].detach(), src_pos[i].detach(), mel_target[i].detach(), mel_len[i]
+        is_training = self.model.training
+        for i in range(examples_to_log):
+            txt, pos, mel_src, length = text_encoded[i].detach(), src_pos[i].detach(), mel_target[i].detach(), mel_len[i]
 
-                mel_pred = self.model(txt.unsqueeze(0), pos.unsqueeze(0)).detach()
+            mel_pred = self.model.inference(txt.unsqueeze(0), pos.unsqueeze(0)).detach()
 
-                mel_pred = mel_pred[:length, :]
-                mel_src = mel_src[:length, :]
+            mel_pred = mel_pred[:length, :]
+            mel_src = mel_src[:length, :]
 
-                wav = waveglow.inference.get_wav(mel_pred.contiguous().transpose(1, 2), self.waveglow_model)
-                pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.T.cpu()))
-                target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.T.cpu()))
+            wav = waveglow.inference.get_wav(mel_pred.contiguous().transpose(1, 2), self.waveglow_model)
+            pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.T.cpu()))
+            target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.T.cpu()))
 
-                self.writer.add_image("mel prediction example", ToTensor()(pred))
-                self.writer.add_image("mel target example", ToTensor()(target))
-                self.writer.add_audio("audio example", wav.detach().cpu().short(), self.config["preprocessing"]["sr"])
+            self.writer.add_image("mel prediction example", ToTensor()(pred))
+            self.writer.add_image("mel target example", ToTensor()(target))
+            self.writer.add_audio("audio example", wav.detach().cpu().short(), self.config["preprocessing"]["sr"])
 
-        self.model.train()
-
+        if is_training:
+            self.model.train()
 
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
         spectrogram = random.choice(spectrogram_batch.cpu())

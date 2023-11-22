@@ -67,15 +67,17 @@ class FastSpeech(BaseModel):
 
     def forward(self, text_encoded, src_pos, mel_pos=None, mel_max_length=None, alignment=None, alpha=1.0, **batch):
         x, _ = self.encoder(text_encoded, src_pos)
-        if self.training:
-            output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
-            output = self.decoder(output, mel_pos)
-            output = self._mask_tensor(output, mel_pos, mel_max_length)
-            output = self.mel_linear(output)
-            return {"mel": output, "duration_predicted": duration_predictor_output}
+        output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
+        output = self.decoder(output, mel_pos)
+        output = self._mask_tensor(output, mel_pos, mel_max_length)
+        output = self.mel_linear(output)
+        return {"mel": output, "duration_predicted": duration_predictor_output}
 
+    @torch.inference_mode()
+    def inference(self, text_encoded, src_pos, alpha=1.0, **batch):
+        self.eval()
+        x, _ = self.encoder(text_encoded, src_pos)
         output, mel_pos = self.length_regulator(x, alpha)
         output = self.decoder(output, mel_pos)
         output = self.mel_linear(output)
         return output
-
