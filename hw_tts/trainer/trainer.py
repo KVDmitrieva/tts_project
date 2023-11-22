@@ -130,8 +130,9 @@ class Trainer(BaseTrainer):
         else:
             batch["mel"] = outputs
 
-        batch["mel_loss"], batch["duration_loss"] = self.criterion(**batch)
-        batch["loss"] = batch["mel_loss"] + batch["duration_loss"]
+        loss_out = self.criterion(**batch)
+        batch.update(loss_out)
+
         if is_train:
             batch["loss"].backward()
             self._clip_grad_norm()
