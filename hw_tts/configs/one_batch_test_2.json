@@ -27,7 +27,7 @@
         "vocab_size": 300
       },
       "va_params": {
-        "duration_predictor_config": {
+        "predictor_params": {
           "encoder_dim":  256,
           "duration_predictor_kernel_size":  3,
           "duration_predictor_filter_size":  256,
