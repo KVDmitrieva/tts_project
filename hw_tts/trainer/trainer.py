@@ -189,21 +189,25 @@ class Trainer(BaseTrainer):
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
 
-    def _log_predictions(self, text, mel, mel_target, mel_len, examples_to_log=3, *args, **kwargs):
+    def _log_predictions(self, text_encoded, src_pos, mel_target, mel_len, examples_to_log=3, *args, **kwargs):
         if self.writer is None:
             return
 
-        res_tuple = list(zip(text, mel, mel_target, mel_len))
+        res_tuple = list(zip(text_encoded, src_pos, mel_target, mel_len))
         shuffle(res_tuple)
 
         for i in range(examples_to_log):
-            txt, mel_pred, mel_src, length = res_tuple[i]
+            txt, pos, mel_src, length = res_tuple[i]
+            self.model.eval()
+            mel_pred = self.model.inference(txt, pos)
+
             mel_pred = mel_pred[:length, :]
             mel_src = mel_src[:length, :]
+
             wav = waveglow.inference.get_wav(mel_pred.contiguous().unsqueeze(0).transpose(1, 2), self.waveglow_model)
             pred = PIL.Image.open(plot_spectrogram_to_buf(mel_pred.T.detach().cpu()))
             target = PIL.Image.open(plot_spectrogram_to_buf(mel_src.T.detach().cpu()))
-            self.writer.add_text("text example", txt)
+
             self.writer.add_image("mel prediction example", ToTensor()(pred))
             self.writer.add_image("mel target example", ToTensor()(target))
             self.writer.add_audio("audio example", wav.detach().cpu().short(), self.config["preprocessing"]["sr"])
