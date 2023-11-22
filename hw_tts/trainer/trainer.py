@@ -204,7 +204,7 @@ class Trainer(BaseTrainer):
             self.writer.add_text("text example", txt)
             self.writer.add_image("mel prediction example", ToTensor()(pred))
             self.writer.add_image("mel target example", ToTensor()(target))
-            self.writer.add_audio("audio example", wav.detach().cpu(), self.config["preprocessing"]["sr"])
+            self.writer.add_audio("audio example", wav.detach().cpu().int16(), self.config["preprocessing"]["sr"])
 
 
     def _log_spectrogram(self, spectrogram_batch, name="spectrogram"):
@@ -219,7 +219,7 @@ class Trainer(BaseTrainer):
     def _log_waveglow_audio(self, spectrogram_batch, name="waveglow audio"):
         mel = random.choice(spectrogram_batch)
         audio = waveglow.inference.get_wav(mel.contiguous().unsqueeze(0).transpose(1, 2), self.waveglow_model)
-        self.writer.add_audio(name, audio.cpu(), self.config["preprocessing"]["sr"])
+        self.writer.add_audio(name, audio.cpu().int16(), self.config["preprocessing"]["sr"])
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):
