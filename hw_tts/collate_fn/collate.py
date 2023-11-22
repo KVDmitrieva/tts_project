@@ -10,9 +10,11 @@ def collate_fn(dataset_items: List[dict]):
     """
     Collate and pad fields in dataset items
     """
-    text, mel, text_encoded = [], [], []
+    text, text_encoded = [], []
+    mel, mel_len = [], []
     alignment, audio = [], []
     src_pos, mel_pos = [], []
+    pitch, energy = [], []
     mel_len = []
     mel_max_len = 0
 

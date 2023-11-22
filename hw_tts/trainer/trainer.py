@@ -198,8 +198,8 @@ class Trainer(BaseTrainer):
 
         for i in range(examples_to_log):
             txt, pos, mel_src, length = res_tuple[i]
-
-            mel_pred = self.model.inference(txt.unsqueeze(0), pos.unsqueeze(0))
+            with torch.no_grad():
+                mel_pred = self.model.inference(txt.unsqueeze(0), pos.unsqueeze(0))
 
             mel_pred = mel_pred[:length, :]
             mel_src = mel_src[:length, :]

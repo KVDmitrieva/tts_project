@@ -48,6 +48,7 @@ class UniversalPredictor(nn.Module):
 
 
 class VarianceAdaptor(nn.Module):
+    # based on 1st version of paper https://arxiv.org/pdf/2006.04558v1.pdf
     def __init__(self, predictor_params, n_bins=256):
         super().__init__()
         self.length_regulator = LengthRegulator(**predictor_params, predictor=UniversalPredictor)
@@ -62,14 +63,14 @@ class VarianceAdaptor(nn.Module):
         pitch_prediction = self.pitch_predictor(x)
         output = pitch_alpha * pitch_prediction if pitch is None else pitch
         log_out = torch.log(output + 1e-12)
-        boundaries = torch.exp(torch.linspace(log_out.min(), log_out.max(), self.n_bins - 1))
+        boundaries = torch.exp(torch.linspace(log_out.min(), log_out.max(), self.n_bins + 1))[1:-1]
         output = self.pitch_embedding(torch.bucketize(output, boundaries))
         return output, pitch_prediction
 
     def _extract_energy(self, x, energy_alpha=1.0, energy=None):
         energy_prediction = self.energy_predictor(x)
         output = energy_alpha * energy_prediction if energy is None else energy
-        boundaries = torch.linspace(output.min(), output.max(), self.n_bins - 1)
+        boundaries = torch.linspace(output.min(), output.max(), self.n_bins + 1)[1:-1]
         output = self.energy_embedding(torch.bucketize(output, boundaries))
         return output, energy_prediction
 
@@ -115,4 +116,4 @@ class FastSpeech2(BaseModel):
         output, mel_pos, _, _ = self.variance(x, alpha, pitch_alpha, energy_alpha)
         output = self.decoder(output, mel_pos)
         output = self.mel_linear(output)
-        return {"mel": output}
+        return output
