@@ -127,7 +127,7 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             outputs = self.model(**batch)
         else:
-            outputs = self.model(batch["text_encoded"], batch["src_pos"])
+            outputs = self.model.inference(batch["text_encoded"], batch["src_pos"], return_pos=True)
 
         if type(outputs) is dict:
             batch.update(outputs)
