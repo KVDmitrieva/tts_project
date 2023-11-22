@@ -125,7 +125,9 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
         if is_train:
             self.optimizer.zero_grad()
-        outputs = self.model(**batch)
+            outputs = self.model(**batch)
+        else:
+            outputs = self.model(batch["text_encoded"], batch["src_pos"])
 
         if type(outputs) is dict:
             batch.update(outputs)
@@ -195,6 +197,7 @@ class Trainer(BaseTrainer):
         if self.writer is None:
             return
         is_training = self.model.training
+        self.model.eval()
         for i in range(examples_to_log):
             txt, pos, mel_src, length = text_encoded[i].detach(), src_pos[i].detach(), mel_target[i].detach(), mel_len[i]
 
