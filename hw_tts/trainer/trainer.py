@@ -125,9 +125,8 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
         if is_train:
             self.optimizer.zero_grad()
-            outputs = self.model(**batch)
-        else:
-            outputs = self.model.inference(batch["text_encoded"], batch["src_pos"], return_pos=True)
+
+        outputs = self.model(**batch)
 
         if type(outputs) is dict:
             batch.update(outputs)
