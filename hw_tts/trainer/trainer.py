@@ -197,7 +197,7 @@ class Trainer(BaseTrainer):
         if self.writer is None:
             return
 
-        res_tuple = list(zip(text_encoded.detach(), src_pos.detach(), mel_target.detach(), mel_len.detach()))
+        res_tuple = list(zip(text_encoded.detach(), src_pos.detach(), mel_target.detach(), mel_len))
         shuffle(res_tuple)
 
         for i in range(examples_to_log):
