@@ -2,7 +2,7 @@
   "name": "fastspeech",
   "n_gpu": 1,
   "preprocessing": {
-    "sr": 16000,
+    "sr": 22050,
     "spectrogram": {
       "type": "MelSpectrogram",
       "args": {
@@ -90,14 +90,14 @@
     "type": "OneCycleLR",
     "args": {
       "steps_per_epoch": 200,
-      "epochs": 2001,
+      "epochs": 61,
       "anneal_strategy": "cos",
       "max_lr": 1e-3,
       "pct_start": 0.1
     }
   },
   "trainer": {
-    "epochs": 2000,
+    "epochs": 60,
     "save_dir": "saved/",
     "save_period": 5,
     "verbosity": 2,
