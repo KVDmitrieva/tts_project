@@ -1,5 +1,5 @@
 {
-  "name": "fastspeech",
+  "name": "FastSpeech2",
   "n_gpu": 1,
   "preprocessing": {
     "sr": 22050,
@@ -15,7 +15,7 @@
     "spectrogram": []
   },
   "arch": {
-    "type": "FastSpeech",
+    "type": "FastSpeech2",
     "args": {
       "encoder_params": {
         "num_layers":  4,
@@ -26,7 +26,7 @@
         "max_seq_len":  3000,
         "vocab_size": 300
       },
-      "lr_params": {
+      "va_params": {
         "duration_predictor_config": {
           "encoder_dim":  256,
           "duration_predictor_kernel_size":  3,
@@ -82,7 +82,7 @@
     }
   },
   "loss": {
-    "type": "FastSpeechLoss",
+    "type": "FastSpeechV2Loss",
     "args": {}
   },
   "metrics": [],
