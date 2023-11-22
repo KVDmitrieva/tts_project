@@ -196,7 +196,7 @@ class Trainer(BaseTrainer):
     def _log_predictions(self, text_encoded, src_pos, mel_target, mel_len, examples_to_log=3, *args, **kwargs):
         if self.writer is None:
             return
-
+        self.model.eval()
         for i in range(examples_to_log):
             txt, pos, mel_src, length = text_encoded[i].detach(), src_pos[i].detach(), mel_target[i].detach(), mel_len[i]
 
