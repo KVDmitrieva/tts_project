@@ -8,6 +8,7 @@ import torchaudio
 from torch import Tensor
 from torch.utils.data import Dataset
 
+import pyworld as pw
 from text import text_to_sequence
 
 from hw_tts.utils.parse_config import ConfigParser
@@ -37,6 +38,7 @@ class BaseDataset(Dataset):
 
     def __getitem__(self, ind):
         data_dict = self._index[ind]
+
         return {
             "text": data_dict["text"],
             "text_encoded": np.array(text_to_sequence(data_dict["text"], ["english_cleaners"])),
