@@ -39,10 +39,12 @@ class Trainer(BaseTrainer):
         self.log_step = 50
         self.waveglow_model = waveglow_model
         self.train_metrics = MetricTracker(
-            "loss", "mel_loss", "duration_loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
+            "loss", "mel_loss", "duration_loss", "pitch_loss", "energy_loss",
+            "grad norm", *[m.name for m in self.metrics], writer=self.writer
         )
         self.evaluation_metrics = MetricTracker(
-            "loss", "mel_loss", "duration_loss", *[m.name for m in self.metrics], writer=self.writer
+            "loss", "mel_loss", "duration_loss", "pitch_loss", "energy_loss",
+            *[m.name for m in self.metrics], writer=self.writer
         )
 
     @staticmethod
@@ -140,9 +142,11 @@ class Trainer(BaseTrainer):
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        metrics.update("loss", batch["loss"].item())
-        metrics.update("mel_loss", batch["mel_loss"].item())
-        metrics.update("duration_loss", batch["duration_loss"].item())
+        for key in loss_out.keys():
+            metrics.update(key, batch[key].item())
+        # metrics.update("loss", batch["loss"].item())
+        # metrics.update("mel_loss", batch["mel_loss"].item())
+        # metrics.update("duration_loss", batch["duration_loss"].item())
         for met in self.metrics:
             metrics.update(met.name, met(**batch))
         return batch
