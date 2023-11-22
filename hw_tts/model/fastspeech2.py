@@ -51,7 +51,7 @@ class VarianceAdaptor(nn.Module):
     # based on 1st version of paper https://arxiv.org/pdf/2006.04558v1.pdf
     def __init__(self, predictor_params, n_bins=256):
         super().__init__()
-        self.length_regulator = LengthRegulator(**predictor_params, predictor=UniversalPredictor)
+        self.length_regulator = LengthRegulator(predictor_params, predictor=UniversalPredictor)
         self.pitch_predictor = UniversalPredictor(**predictor_params)
         self.energy_predictor = UniversalPredictor(**predictor_params)
 
