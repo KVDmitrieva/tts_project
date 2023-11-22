@@ -52,7 +52,7 @@ class Trainer(BaseTrainer):
         """
         Move all necessary tensors to the GPU
         """
-        for tensor_for_gpu in ["alignment", "mel_target", "src_pos", "mel_pos", "text_encoded"]:
+        for tensor_for_gpu in ["alignment", "mel_target", "src_pos", "mel_pos", "text_encoded", "pitch", "energy"]:
             batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
         return batch
 
