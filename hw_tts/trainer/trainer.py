@@ -198,8 +198,7 @@ class Trainer(BaseTrainer):
 
         for i in range(examples_to_log):
             txt, pos, mel_src, length = res_tuple[i]
-            self.model.eval()
-            print("DEBUG", txt.shape, pos.shape)
+
             mel_pred = self.model.inference(txt.unsqueeze(0), pos.unsqueeze(0))
 
             mel_pred = mel_pred[:length, :]

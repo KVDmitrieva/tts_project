@@ -109,7 +109,7 @@ class FastSpeech2(BaseModel):
         return {"mel": output, "duration_predicted": duration_out,
                 "pitch_predicted": pitch_out, "energy_predicted": energy_out}
 
-    @torch.inference_mode
+    @torch.inference_mode()
     def inference(self, text_encoded, src_pos, alpha=1.0, pitch_alpha=1.0, energy_alpha=1.0, **batch):
         x, _ = self.encoder(text_encoded, src_pos)
         output, mel_pos, _, _ = self.variance(x, alpha, pitch_alpha, energy_alpha)
