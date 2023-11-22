@@ -47,7 +47,7 @@ class LJspeechDataset(BaseDataset):
             mel_path = self._mel_dir / ("ljspeech-mel-%05d.npy" % (w_id + 1))
             pitch_path = self._pitch_dir / f"{w_id + 1}.npy"
             alignment_path = self._alignment_dir / f"{w_id}.npy"
-            mel = np.load(mel_path)
+            mel = torch.tensor(np.load(mel_path))
             index.append(
                 {
                     "text": text[w_id][:-1],
