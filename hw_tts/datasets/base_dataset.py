@@ -40,7 +40,7 @@ class BaseDataset(Dataset):
 
         return {
             "text": data_dict["text"],
-            "pitch": data_dict["pitch"],
+            "pitch": data_dict.get("pitch", None),
             "energy": data_dict["energy"],
             "text_encoded": np.array(text_to_sequence(data_dict["text"], ["english_cleaners"])),
             "mel": data_dict.get("mel", None),
