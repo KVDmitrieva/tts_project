@@ -20,7 +20,7 @@ from hw_tts.utils.parse_config import ConfigParser
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
 
-def main(config, out_dir, test_file):
+def main(config, out_dir, test_file, s, p, e, full_test):
     logger = config.get_logger("test")
 
     # define cpu or gpu if possible
@@ -60,13 +60,23 @@ def main(config, out_dir, test_file):
 
             text_enc = torch.from_numpy(text_enc).long().unsqueeze(0).to(device)
             src_pos = torch.from_numpy(src_pos).long().unsqueeze(0).to(device)
+            if full_test:
+                for s in [0.8, 1., 1.2]:
+                    for p in [0.8, 1., 1.2]:
+                        for e in [0.8, 1., 1.2]:
+                            mel = model.inference(text_enc, src_pos, s, p, e).transpose(1, 2)
 
-            mel = model.inference(text_enc, src_pos).transpose(1, 2)
+                            waveglow.inference.inference(
+                                mel, waveglow_model,
+                                f"{out_dir}/text_{i + 1}-s_{s}-p_{p}-e_{e}.wav"
+                            )
+            else:
+                mel = model.inference(text_enc, src_pos, s, p, e).transpose(1, 2)
 
-            waveglow.inference.inference(
-                mel, waveglow_model,
-                f"{out_dir}/_{i}_waveglow.wav"
-            )
+                waveglow.inference.inference(
+                    mel, waveglow_model,
+                    f"{out_dir}/text_{i + 1}-s_{s}-p_{p}-e_{e}.wav"
+                )
 
 
 if __name__ == "__main__":
@@ -109,7 +119,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-b",
         "--batch-size",
-        default=20,
+        default=1,
         type=int,
         help="Test dataset batch size",
     )
@@ -119,6 +129,34 @@ if __name__ == "__main__":
         default=1,
         type=int,
         help="Number of workers for test dataloader",
+    )
+    args.add_argument(
+        "-s",
+        "--speed",
+        default=1.,
+        type=float,
+        help="speed level",
+    )
+    args.add_argument(
+        "-p",
+        "--pitch",
+        default=1.,
+        type=float,
+        help="pitch level",
+    )
+    args.add_argument(
+        "-e",
+        "--energy",
+        default=1.,
+        type=float,
+        help="energy level",
+    )
+    args.add_argument(
+        "-a",
+        "--test-all",
+        default=False,
+        type=bool,
+        help="run full test",
     )
 
     args = args.parse_args()
@@ -141,4 +179,4 @@ if __name__ == "__main__":
     config["data"]["test"]["batch_size"] = args.batch_size
     config["data"]["test"]["n_jobs"] = args.jobs
 
-    main(config, args.output, args.test)
+    main(config, args.output, args.test, args.speed, args.pitch, args.energy, args.test_all)
