@@ -36,8 +36,6 @@ def collate_fn(dataset_items: List[dict]):
         "mel_max_len": mel_max_len,
         "pitch": pad_sequence(pitch, batch_first=True).int(),
         "energy": pad_sequence(energy, batch_first=True).int(),
-        "pitch_t": pad_sequence(pitch, batch_first=True),
-        "energy_t": pad_sequence(energy, batch_first=True),
         "mel_pos": pad_sequence(mel_pos, batch_first=True).long(),
         "src_pos": pad_sequence(src_pos, batch_first=True).long(),
         "mel_target": pad_sequence(mel, batch_first=True).float(),

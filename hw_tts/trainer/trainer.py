@@ -52,7 +52,7 @@ class Trainer(BaseTrainer):
         """
         Move all necessary tensors to the GPU
         """
-        for tensor_for_gpu in ["alignment", "mel_target", "src_pos", "mel_pos", "text_encoded", "pitch", "energy", "pitch_t", "energy_t"]:
+        for tensor_for_gpu in ["alignment", "mel_target", "src_pos", "mel_pos", "text_encoded", "pitch", "energy"]:
             batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
         return batch
 
@@ -137,7 +137,8 @@ class Trainer(BaseTrainer):
         batch.update(loss_out)
 
         if is_train:
-            batch["loss"].backward()
+            with torch.autograd.set_detect_anamoly():
+                batch["loss"].backward(retain_graph=True)
             self._clip_grad_norm()
             self.optimizer.step()
             if self.lr_scheduler is not None:
