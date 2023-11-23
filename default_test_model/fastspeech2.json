@@ -45,36 +45,6 @@
       "num_mels": 80
     }
   },
-  "data": {
-    "train": {
-      "batch_size": 32,
-      "num_workers": 0,
-      "datasets": [
-        {
-          "type": "LJspeechDataset",
-          "args": {
-            "part": "train",
-            "mel_dir": "/kaggle/input/ljseech-mels/mels",
-            "pitch_dir": "/kaggle/input/pitches/pitches"
-          }
-        }
-      ]
-    },
-    "val": {
-      "batch_size": 32,
-      "num_workers": 0,
-      "datasets": [
-        {
-          "type": "LJspeechDataset",
-          "args": {
-            "part": "val",
-            "mel_dir": "/kaggle/input/ljseech-mels/mels",
-            "pitch_dir": "/kaggle/input/pitches/pitches"
-          }
-        }
-      ]
-    }
-  },
   "optimizer": {
     "type": "AdamW",
     "args": {
