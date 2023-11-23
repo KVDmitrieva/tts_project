@@ -78,7 +78,7 @@ class VarianceAdaptor(nn.Module):
         output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
         pitch_out, pitch_prediction = self._extract_pitch(output, pitch_alpha=pitch_alpha, pitch=pitch)
         energy_out, energy_prediction = self._extract_energy(output, energy_alpha=energy_alpha, energy=energy)
-        output += pitch_out + energy_out
+        output = output + pitch_out + energy_out
         return output, duration_predictor_output, pitch_prediction, energy_prediction
 
 
