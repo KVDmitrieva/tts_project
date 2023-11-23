@@ -58,7 +58,7 @@ class VarianceAdaptor(nn.Module):
         self.pitch_embedding = nn.Embedding(n_bins, predictor_params["encoder_dim"])
         self.energy_embedding = nn.Embedding(n_bins, predictor_params["encoder_dim"])
 
-        self.pitch_boundaries = nn.Parameter(torch.logspace(p_min, p_max, n_bins + 1)[1:-1], requires_grad=False)
+        self.pitch_boundaries = nn.Parameter(torch.exp(torch.linspace(p_min, p_max, n_bins + 1))[1:-1], requires_grad=False)
         self.energy_boundaries = nn.Parameter(torch.linspace(en_min, en_max, n_bins + 1)[1:-1], requires_grad=False)
 
     def _extract_pitch(self, x, pitch_alpha=1.0, pitch=None):
