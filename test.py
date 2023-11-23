@@ -52,7 +52,7 @@ def main(config, out_dir, test_file, s, p, e, full_test):
 
     with torch.no_grad():
         for i, t in enumerate(tqdm(texts, desc="Processing texts")):
-            text_enc = text_to_sequence(t, ["english_cleaners"]).to(device)
+            text_enc = text_to_sequence(t, ["english_cleaners"])
             src_pos = np.arange(1, len(text_enc) + 1)
 
             text_enc = torch.from_numpy(text_enc).long().unsqueeze(0).to(device)
