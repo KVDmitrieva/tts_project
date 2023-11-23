@@ -26,9 +26,6 @@ def main(config, out_dir, test_file, s, p, e, full_test):
     # define cpu or gpu if possible
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # setup data_loader instances
-    dataloaders = get_dataloaders(config)
-
     # build model architecture
     model = config.init_obj(config["arch"], module_model)
     logger.info(model)
