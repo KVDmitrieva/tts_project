@@ -63,20 +63,19 @@ class VarianceAdaptor(nn.Module):
         pitch_prediction = self.pitch_predictor(x)
         output = pitch_alpha * pitch_prediction if pitch is None else pitch
         log_out = torch.log(output + 1e-12)
-        boundaries = torch.exp(torch.linspace(log_out.min(), log_out.max(), self.n_bins + 1))[1:-1].to(x.device)
+        boundaries = torch.exp(torch.linspace(log_out.min(), log_out.max(), self.n_bins + 1, dtype=torch.float))[1:-1].to(x.device)
         output = self.pitch_embedding(torch.bucketize(output, boundaries).to(x.device))
         return output, pitch_prediction
 
     def _extract_energy(self, x, energy_alpha=1.0, energy=None):
         energy_prediction = self.energy_predictor(x)
         output = energy_alpha * energy_prediction if energy is None else energy
-        boundaries = torch.linspace(output.min(), output.max(), self.n_bins + 1)[1:-1].to(x.device)
+        boundaries = torch.linspace(output.min(), output.max(), self.n_bins + 1, dtype=torch.float)[1:-1].to(x.device)
         output = self.energy_embedding(torch.bucketize(output, boundaries).to(x.device))
         return output, energy_prediction
 
     def forward(self, x, alpha=1.0, pitch_alpha=1.0, energy_alpha=1.0,
                 alignment=None, mel_max_length=None, pitch=None, energy=None, **batch):
-        print(pitch.dtype, energy.dtype)
         output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
         pitch_out, pitch_prediction = self._extract_pitch(output, pitch_alpha=pitch_alpha, pitch=pitch)
         energy_out, energy_prediction = self._extract_energy(output, energy_alpha=energy_alpha, energy=energy)
