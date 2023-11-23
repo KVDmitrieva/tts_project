@@ -137,8 +137,7 @@ class Trainer(BaseTrainer):
         batch.update(loss_out)
 
         if is_train:
-            with  torch.autograd.set_detect_anomaly(True):
-                batch["loss"].backward()
+            batch["loss"].backward()
             self._clip_grad_norm()
             self.optimizer.step()
             if self.lr_scheduler is not None:
