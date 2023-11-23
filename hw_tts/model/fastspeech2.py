@@ -80,6 +80,7 @@ class VarianceAdaptor(nn.Module):
         pitch_out, pitch_prediction = self._extract_pitch(output, pitch_alpha=pitch_alpha, pitch=pitch)
         energy_out, energy_prediction = self._extract_energy(output, energy_alpha=energy_alpha, energy=energy)
         output += pitch_out + energy_out
+        print(output.dtype, duration_predictor_output.dtype, pitch_prediction.dtype, energy_prediction.dtype)
         return output, duration_predictor_output, pitch_prediction, energy_prediction
 
 
