@@ -54,8 +54,6 @@
           "type": "LJspeechDataset",
           "args": {
             "part": "val",
-            "mel_dir": "/kaggle/input/ljseech-mels/mels",
-            "pitch_dir": "/kaggle/input/pitches/pitches",
             "limit": 10
           }
         }
@@ -69,8 +67,6 @@
           "type": "LJspeechDataset",
           "args": {
             "part": "val",
-            "mel_dir": "/kaggle/input/ljseech-mels/mels",
-            "pitch_dir": "/kaggle/input/pitches/pitches",
             "limit": 10
           }
         }
