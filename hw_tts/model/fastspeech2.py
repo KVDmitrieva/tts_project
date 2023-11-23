@@ -49,7 +49,7 @@ class UniversalPredictor(nn.Module):
 
 class VarianceAdaptor(nn.Module):
     # based on 1st version of paper https://arxiv.org/pdf/2006.04558v1.pdf
-    def __init__(self, predictor_params, n_bins=256, en_min=-1., en_max=15., p_min=-1., p_max=7.):
+    def __init__(self, predictor_params, n_bins=256, en_min=-1., en_max=15., p_min=-12., p_max=7.):
         super().__init__()
         self.length_regulator = LengthRegulator(predictor_params, predictor=UniversalPredictor)
         self.pitch_predictor = UniversalPredictor(**predictor_params)
