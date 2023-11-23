@@ -49,29 +49,28 @@ class UniversalPredictor(nn.Module):
 
 class VarianceAdaptor(nn.Module):
     # based on 1st version of paper https://arxiv.org/pdf/2006.04558v1.pdf
-    def __init__(self, predictor_params, n_bins=256):
+    def __init__(self, predictor_params, n_bins=256, en_min=-1., en_max=15., p_min=-1., p_max=7.):
         super().__init__()
         self.length_regulator = LengthRegulator(predictor_params, predictor=UniversalPredictor)
         self.pitch_predictor = UniversalPredictor(**predictor_params)
         self.energy_predictor = UniversalPredictor(**predictor_params)
 
-        self.n_bins = 256
         self.pitch_embedding = nn.Embedding(n_bins, predictor_params["encoder_dim"])
         self.energy_embedding = nn.Embedding(n_bins, predictor_params["encoder_dim"])
+
+        self.pitch_boundaries = nn.Parameter(torch.logspace(p_min, p_max, n_bins + 1)[1:-1], requires_grad=False)
+        self.energy_boundaries = nn.Parameter(torch.linspace(en_min, en_max, n_bins + 1)[1:-1], requires_grad=False)
 
     def _extract_pitch(self, x, pitch_alpha=1.0, pitch=None):
         pitch_prediction = self.pitch_predictor(x)
         output = pitch_alpha * pitch_prediction if pitch is None else pitch
-        log_out = torch.log(output + 1e-12)
-        boundaries = torch.exp(torch.linspace(log_out.min(), log_out.max(), self.n_bins + 1, dtype=torch.float))[1:-1].to(x.device)
-        output = self.pitch_embedding(torch.bucketize(output, boundaries).to(x.device))
+        output = self.pitch_embedding(torch.bucketize(output, self.pitch_boundaries).to(x.device))
         return output, pitch_prediction
 
     def _extract_energy(self, x, energy_alpha=1.0, energy=None):
         energy_prediction = self.energy_predictor(x)
         output = energy_alpha * energy_prediction if energy is None else energy
-        boundaries = torch.linspace(output.min(), output.max(), self.n_bins + 1, dtype=torch.float)[1:-1].to(x.device)
-        output = self.energy_embedding(torch.bucketize(output, boundaries).to(x.device))
+        output = self.energy_embedding(torch.bucketize(output, self.energy_boundaries).to(x.device))
         return output, energy_prediction
 
     def forward(self, x, alpha=1.0, pitch_alpha=1.0, energy_alpha=1.0,
