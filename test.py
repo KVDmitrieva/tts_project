@@ -117,13 +117,6 @@ if __name__ == "__main__":
         help="Path to test texts",
     )
     args.add_argument(
-        "-b",
-        "--batch-size",
-        default=1,
-        type=int,
-        help="Test dataset batch size",
-    )
-    args.add_argument(
         "-j",
         "--jobs",
         default=1,
@@ -175,8 +168,5 @@ if __name__ == "__main__":
     if args.config is not None:
         with Path(args.config).open() as f:
             config.config.update(json.load(f))
-
-    config["data"]["test"]["batch_size"] = args.batch_size
-    config["data"]["test"]["n_jobs"] = args.jobs
 
     main(config, args.output, args.test, args.speed, args.pitch, args.energy, args.test_all)
