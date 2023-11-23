@@ -76,6 +76,7 @@ class VarianceAdaptor(nn.Module):
 
     def forward(self, x, alpha=1.0, pitch_alpha=1.0, energy_alpha=1.0,
                 alignment=None, mel_max_length=None, pitch=None, energy=None, **batch):
+        print(pitch.dtype, energy.dtype)
         output, duration_predictor_output = self.length_regulator(x, alpha, alignment, mel_max_length)
         pitch_out, pitch_prediction = self._extract_pitch(output, pitch_alpha=pitch_alpha, pitch=pitch)
         energy_out, energy_prediction = self._extract_energy(output, energy_alpha=energy_alpha, energy=energy)
