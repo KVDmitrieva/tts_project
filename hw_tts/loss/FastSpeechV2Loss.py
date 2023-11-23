@@ -9,8 +9,8 @@ class FastSpeechV2Loss(nn.Module):
 
     def forward(self, mel, duration_predicted, pitch_predicted, energy_predicted,
                 mel_target, alignment, pitch, energy, **batch):
-        mel_loss = self.mse_loss(mel, mel_target)
-        duration_predictor_loss = self.l1_loss(duration_predicted, alignment.float())
+        mel_loss = self.mse_loss(mel, mel_target).float()
+        duration_predictor_loss = self.l1_loss(duration_predicted, alignment.float()).float()
         pitch_loss = self.mse_loss(pitch_predicted, pitch).float()
         energy_loss = self.mse_loss(energy_predicted, energy).float()
         return {
