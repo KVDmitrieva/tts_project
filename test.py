@@ -55,8 +55,8 @@ def main(config, out_dir, test_file, s, p, e, full_test):
             text_enc = text_to_sequence(t, ["english_cleaners"])
             src_pos = np.arange(1, len(text_enc) + 1)
 
-            text_enc = torch.from_numpy(text_enc).long().unsqueeze(0).to(device)
-            src_pos = torch.from_numpy(src_pos).long().unsqueeze(0).to(device)
+            text_enc = torch.tensor(text_enc).long().unsqueeze(0).to(device)
+            src_pos = torch.tensor(src_pos).long().unsqueeze(0).to(device)
             if full_test:
                 for s in [0.8, 1., 1.2]:
                     for p in [0.8, 1., 1.2]:
