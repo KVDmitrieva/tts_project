@@ -52,7 +52,7 @@ class LJspeechDataset(BaseDataset):
                 {
                     "text": text[w_id][:-1],
                     "mel": mel,
-                    "pitch": np.load(pitch_path).astype("float"),
+                    "pitch": np.load(pitch_path).astype("float32"),
                     "energy": torch.norm(mel, p="fro", dim=1),
                     "alignment": np.load(alignment_path)
                 }
