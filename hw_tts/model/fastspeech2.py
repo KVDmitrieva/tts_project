@@ -64,14 +64,14 @@ class VarianceAdaptor(nn.Module):
         output = pitch_alpha * pitch_prediction if pitch is None else pitch
         log_out = torch.log(output + 1e-12)
         boundaries = torch.exp(torch.linspace(log_out.min(), log_out.max(), self.n_bins + 1))[1:-1].to(x.device)
-        output = self.pitch_embedding(torch.bucketize(output, boundaries).to(x.device))
+        output = self.pitch_embedding(torch.bucketize(output, boundaries, out_int32=True).to(x.device))
         return output, pitch_prediction
 
     def _extract_energy(self, x, energy_alpha=1.0, energy=None):
         energy_prediction = self.energy_predictor(x)
         output = energy_alpha * energy_prediction if energy is None else energy
         boundaries = torch.linspace(output.min(), output.max(), self.n_bins + 1)[1:-1].to(x.device)
-        output = self.energy_embedding(torch.bucketize(output, boundaries).to(x.device))
+        output = self.energy_embedding(torch.bucketize(output, boundaries, out_int32=True).to(x.device))
         return output, energy_prediction
 
     def forward(self, x, alpha=1.0, pitch_alpha=1.0, energy_alpha=1.0,
