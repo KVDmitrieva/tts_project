@@ -1,4 +1,9 @@
 # TTS project
+Implementation of [FastSpeech 2: Fast and High-Quality End-to-End
+Text-to-Speech](https://arxiv.org/pdf/2006.04558v8.pdf)
+<p align="center">
+  <img src="./model.png" height="300" />
+</p>
 
 ## Installation guide
 Run
